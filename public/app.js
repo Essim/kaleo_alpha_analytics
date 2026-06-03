@@ -28,6 +28,7 @@ const els = {
   sortScore: document.querySelector("#sortScore")
 };
 
+
 const themeLabels = {
   guidance: "Guidance",
   fusion: "Fusion/grid",
