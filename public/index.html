@@ -86,7 +86,7 @@
             <div id="statsGrid" class="stats-grid"></div>
           </section>
 
-          <section class="workbench">
+          <section id="workbench" class="workbench is-detail-closed">
             <div class="cards-pane">
               <div class="pane-title">
                 <div>
@@ -98,13 +98,16 @@
                     <button id="mainCardsTab" type="button" class="active" data-i18n="cards.mainTab">Main cards</button>
                     <button id="moreCardsTab" type="button" data-i18n="cards.moreTab">More cards</button>
                   </div>
+                  <button id="cardViewModeToggle" class="icon-button card-view-toggle" type="button" aria-label="Switch to detailed card view" data-i18n-aria-label="cards.viewModeAria" data-tooltip="Switch to detailed card view">
+                    <span class="card-view-toggle__icon" aria-hidden="true"></span>
+                  </button>
                   <select id="themeFilter" aria-label="Card theme" data-i18n-aria-label="cards.themeAria"></select>
                 </div>
               </div>
               <div id="actionCards" class="action-cards"></div>
             </div>
 
-            <div class="detail-pane">
+            <div class="detail-pane" hidden>
               <div id="actionDetail"></div>
             </div>
           </section>

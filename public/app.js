@@ -16,11 +16,14 @@ const els = {
   progressionOnly: document.querySelector("#progressionOnly"),
   subsetSentence: document.querySelector("#subsetSentence"),
   statsGrid: document.querySelector("#statsGrid"),
+  workbench: document.querySelector("#workbench"),
   themeFilter: document.querySelector("#themeFilter"),
   mainCardsTab: document.querySelector("#mainCardsTab"),
   moreCardsTab: document.querySelector("#moreCardsTab"),
+  cardViewModeToggle: document.querySelector("#cardViewModeToggle"),
   actionCards: document.querySelector("#actionCards"),
   actionDetail: document.querySelector("#actionDetail"),
+  detailPane: document.querySelector(".detail-pane"),
   testerList: document.querySelector("#testerList"),
   testerDetail: document.querySelector("#testerDetail"),
   sortImpact: document.querySelector("#sortImpact"),
@@ -73,6 +76,9 @@ const UI = {
     "cards.mainTab": "Main cards",
     "cards.moreTab": "More cards",
     "cards.themeAria": "Card theme",
+    "cards.viewModeAria": "Switch card display mode",
+    "cards.switchToDetailed": "Switch to detailed card view",
+    "cards.switchToSimple": "Switch to simple card view",
     "card.kind.strength": "Strength",
     "card.kind.weakness": "Weakness",
     "card.kind.card": "Card",
@@ -210,6 +216,9 @@ const UI = {
     "cards.mainTab": "Cartes principales",
     "cards.moreTab": "Autres cartes",
     "cards.themeAria": "Thème de carte",
+    "cards.viewModeAria": "Changer le mode d'affichage des cartes",
+    "cards.switchToDetailed": "Passer en affichage détaillé des cartes",
+    "cards.switchToSimple": "Passer en affichage simple des cartes",
     "card.kind.strength": "Force",
     "card.kind.weakness": "Faiblesse",
     "card.kind.card": "Carte",
@@ -252,7 +261,7 @@ const UI = {
     "section.usage": "Métriques d'usage",
     "section.endQuestionnaire": "Questionnaire de fin",
     "section.j7": "J+7",
-    "section.comments": "Commentaires et coherence",
+    "section.comments": "Commentaires et cohérence",
     "section.flow": "Parcours de playtest ({count} événements)",
     "section.noQualitative": "Aucune ligne qualitative rattachée à ce testeur.",
     "section.noTimeline": "Aucune timeline disponible.",
@@ -568,6 +577,152 @@ const IMPACT_LABELS = {
   }
 };
 
+const METRIC_SOURCE_LOOKUP = {
+  activeHours: { metric: "total_active_hours", group: "activeTime" },
+  sessions: { metric: "session_count", group: "activeTime" },
+  activeDays: { metric: "active_days_count", group: "retention" },
+  retainedD7: { metric: "retained_d7", group: "retention" },
+  timeToFirstRecipe: { metric: "time_to_recipe_1_min", group: "firstRecipe" },
+  reachedFirstRecipe: { metric: "reached_recipe_1", group: "firstRecipe" },
+  failedMergeRatio: { metric: "failed_merge_ratio", group: "objects" },
+  gridFillPct: { metric: "final_fill_rate_pct", group: "grid" },
+  bfiDistinct: { metric: "bfi_questions_distinct_shown", group: "bfi" },
+  questionRepeats: { group: "questionRepeats" },
+  ritualCompleted: { metric: "ritual_completed_count", group: "ritual" },
+  ritualCompletionRate: { metric: "ritual_completion_rate", group: "ritual" },
+  questionnaireInstances: { metric: "questionnaire_instances", group: "questionnaireLoad" },
+  secondsPerQuestion: { metric: "seconds_per_question", group: "questionnaireLoad" },
+  observatoryVisits: { metric: "observatory_visit_count", group: "observatory" },
+  journalOpenRate: { metric: "journal_open_rate", group: "observatory" },
+  runtimeErrors: { group: "runtimeEvents" },
+  notificationRuntimeErrors: { group: "notificationEvents" },
+  p95LoadMs: { metric: "p95_load_ms", group: "technical" },
+  lowFpsRate: { metric: "low_fps_rate", group: "technical" },
+  interactionsPerRecipe: { metric: "interactions_per_recipe", group: "recipeEfficiency" },
+  soundSessionRate: { metric: "device_volume_nonzero_session_rate", group: "audio" },
+  j7Score: { group: "j7Score" },
+  screeningCompleted: { group: "screeningCompleted" },
+  endCompleted: { group: "endCompleted" },
+  j7Completed: { group: "j7Completed" },
+  fullChain: { group: "fullChain" },
+  coherenceFlag: { group: "coherenceFlag" },
+  progressionBlock: { group: "progressionBlock" },
+  fusionBlock: { group: "fusionBlock" },
+  technicalBlock: { group: "technicalBlock" },
+  notificationIssue: { group: "notificationIssue" },
+  likedGraphics: { group: "likedGraphics" },
+  likedMusic: { group: "likedMusic" },
+  dislikedMusic: { group: "dislikedMusic" },
+  questionnaireFriction: { group: "questionnaireFriction" },
+  resultsInterest: { group: "resultsInterest" },
+  ritualEngaged: { group: "ritualEngaged" },
+  downloadPositive: { group: "downloadPositive" },
+  highScore: { group: "highScore" },
+  powerUser: { group: "powerUser" }
+};
+
+const METRIC_FORMULA_GROUPS = {
+  en: {
+    activeTime: "Per tester: total_active_hours = active seconds / 3600. Active seconds are the sum of session_end.session_duration_s; when session_end is missing, sessions are reconstructed by summing gaps between successive events, each gap capped at 300 seconds. The same KPI row also tracks observed/reconstructed session_count.",
+    retention: "install_day = min(PLAYER_START_DATE, first event date). active_days_count = count distinct active local dates. An active date requires a useful event or playtest_launch/session/gameStarted. retained_d7 = 1 when the tester is active on install_day + 7, otherwise 0.",
+    firstRecipe: "t0 = tutorial_completed timestamp; fallback is first_post_onboarding_action, then first useful event. Recipes are tile_merge events with first_time = 1, sorted by timestamp. reached_recipe_1 = 1 if at least one first-time recipe exists. time_to_recipe_1_min = first recipe timestamp - t0, in minutes.",
+    objects: "failed_merge_ratio = merge_cancelled / (merge_cancelled + tile_merge). Null/NA when the denominator is missing or zero.",
+    grid: "final_fill_rate_pct = the last logged grid fill percentage for the tester/grid. The KPI family also stores max fill, final filled tiles, and sample count; this website displays the final fill percentage.",
+    bfi: "bfi_questions_distinct_shown = count distinct (questionnaire_id, question_id) from question_shown. It measures questions shown, not questions answered.",
+    questionRepeats: "questionRepeats = count of repeated exact question_shown occurrences for the same tester after the first occurrence of the same question key.",
+    ritual: "ritual_completed_count = count distinct ritual_id in ritual_completed. ritual_completion_rate = completed ritual events / opened ritual events; null/NA when there is no opened ritual denominator.",
+    questionnaireLoad: "questionnaire_instances counts in-game questionnaire runs. seconds_per_question = questionnaire duration_s / max(question_count, 1), using questionnaire_summary/questionnaire_completed data when available.",
+    observatory: "observatory_visit_count = count observatory_entered grouped by tester and observatory session. journal_open_rate = visits with journal_opened / observatory visits.",
+    runtimeEvents: "runtimeErrors = count of runtime_error events attributed to this tester in the analytics flow.",
+    notificationEvents: "notificationRuntimeErrors = count of runtime_error events classified as notification-related for this tester.",
+    technical: "p95_load_ms is the 95th percentile of logged load_time_ms.duration_ms for the tester. low_fps_rate = count(perf_sample with avg_fps < 25 or min_fps < 20) / perf_sample_count.",
+    recipeEfficiency: "interactions_per_recipe = tile_interactions / max(first_time_recipes, 1), where tile_interactions include tile_click, tile_pickup, tile_drop, tile_swap, tile_merge, and merge_cancelled.",
+    audio: "device_volume_nonzero_session_rate = sessions with at least one non-zero device-volume sample / sessions with volume samples. It is a device-volume proxy, not proof that Kaleotopia music was audible or liked.",
+    j7Score: "Raw J+7 questionnaire numeric answer to the global alpha experience score, parsed as a number on a 0-10 scale.",
+    screeningCompleted: "hasScreening is true when a LimeSurvey screening response was matched to the local tester id.",
+    endCompleted: "hasEndQuestionnaire is true when the in-game/end questionnaire was matched to the local tester id or completion event.",
+    j7Completed: "hasJ7 is true when a J+7 LimeSurvey response was matched to the local tester id.",
+    fullChain: "hasAllQuestionnaires is true only when the tester has screening + end questionnaire + J+7 responses.",
+    coherenceFlag: "coherenceFlag is true when the qualitative coherence analysis produced at least one warning/flag for the tester.",
+    progressionBlock: "progressionBlock is true when the J+7 progression blocker is yes, or end-questionnaire barriers mention what to do/progression, or the coherence flags include a progression block.",
+    fusionBlock: "fusionBlock is true when the J+7 fusion blocker is yes, or end-questionnaire frustrations mention fusion/recipes, or failed_merge_ratio >= 0.30.",
+    technicalBlock: "technicalBlock is true when the J+7 technical blocker is yes, or the tester has runtimeErrors > 0.",
+    notificationIssue: "notificationIssue is true when notification runtime errors exist, or coherence/frustration text mentions notifications.",
+    likedGraphics: "likedGraphics is true when J+7 marks graphics among liked aspects, or the end questionnaire visual answer mentions a positive/pleasant visual signal.",
+    likedMusic: "likedMusic is true when J+7 marks music among liked aspects.",
+    dislikedMusic: "dislikedMusic is true when J+7 marks music among disliked aspects, or the J+7 sound answer says the music did not please the tester.",
+    questionnaireFriction: "questionnaireFriction is true when J+7 dislikes the questioning experience, or end-questionnaire frustrations mention questionnaires, or questionRepeats >= 10.",
+    resultsInterest: "resultsInterest is true when J+7 likes results consultation, or observatoryVisits > 0.",
+    ritualEngaged: "ritualEngaged is true when ritualCompleted >= 5.",
+    downloadPositive: "downloadPositive is true when the J+7 fuller-version download answer is Oui or Probablement.",
+    highScore: "highScore is true when the J+7 global score is >= 7/10.",
+    powerUser: "powerUser is true when activeDays >= 7 or activeHours >= 2."
+  },
+  fr: {
+    activeTime: "Par testeur : total_active_hours = secondes actives / 3600. Les secondes actives additionnent session_end.session_duration_s ; si session_end manque, les sessions sont reconstruites par somme des écarts entre événements successifs, chaque écart étant plafonné à 300 secondes. La même famille KPI suit aussi session_count observé/reconstruit.",
+    retention: "install_day = min(PLAYER_START_DATE, date du premier event). active_days_count = nombre de dates locales actives distinctes. Une date active exige un event utile ou playtest_launch/session/gameStarted. retained_d7 = 1 si le testeur est actif à install_day + 7, sinon 0.",
+    firstRecipe: "t0 = timestamp tutorial_completed ; fallback : first_post_onboarding_action, puis premier event utile. Les recettes sont les tile_merge avec first_time = 1, triées par timestamp. reached_recipe_1 = 1 s'il existe au moins une première recette. time_to_recipe_1_min = timestamp de première recette - t0, en minutes.",
+    objects: "failed_merge_ratio = merge_cancelled / (merge_cancelled + tile_merge). Null/NA si le dénominateur manque ou vaut zéro.",
+    grid: "final_fill_rate_pct = dernier pourcentage de remplissage de grille loggé pour le testeur/la grille. La famille KPI stocke aussi le remplissage max, les tuiles finales et le nombre d'échantillons ; ce site affiche le remplissage final.",
+    bfi: "bfi_questions_distinct_shown = nombre distinct de (questionnaire_id, question_id) dans question_shown. Cela mesure les questions montrées, pas les questions répondues.",
+    questionRepeats: "questionRepeats = nombre d'occurrences question_shown exactes répétées pour le même testeur après la première occurrence de la même clé de question.",
+    ritual: "ritual_completed_count = nombre distinct de ritual_id dans ritual_completed. ritual_completion_rate = événements ritual_completed / événements ritual_opened ; null/NA lorsqu'il n'y a pas de dénominateur opened.",
+    questionnaireLoad: "questionnaire_instances compte les passages de questionnaire in-game. seconds_per_question = duration_s du questionnaire / max(question_count, 1), depuis questionnaire_summary/questionnaire_completed quand disponible.",
+    observatory: "observatory_visit_count = nombre d'observatory_entered groupés par testeur et session d'observatoire. journal_open_rate = visites avec journal_opened / visites observatoire.",
+    runtimeEvents: "runtimeErrors = nombre d'events runtime_error attribués à ce testeur dans le flux analytique.",
+    notificationEvents: "notificationRuntimeErrors = nombre d'events runtime_error classés comme liés aux notifications pour ce testeur.",
+    technical: "p95_load_ms est le 95e percentile de load_time_ms.duration_ms loggé pour le testeur. low_fps_rate = count(perf_sample avec avg_fps < 25 ou min_fps < 20) / perf_sample_count.",
+    recipeEfficiency: "interactions_per_recipe = tile_interactions / max(first_time_recipes, 1), où tile_interactions inclut tile_click, tile_pickup, tile_drop, tile_swap, tile_merge et merge_cancelled.",
+    audio: "device_volume_nonzero_session_rate = sessions avec au moins un échantillon de volume appareil non nul / sessions avec échantillons de volume. C'est un proxy de volume appareil, pas une preuve que la musique Kaleotopia était audible ou appréciée.",
+    j7Score: "Réponse numérique brute du questionnaire J+7 à la note globale de l'expérience alpha, parsée comme nombre sur une échelle 0-10.",
+    screeningCompleted: "hasScreening vaut true lorsqu'une réponse LimeSurvey de screening est appariée à l'identifiant testeur local.",
+    endCompleted: "hasEndQuestionnaire vaut true lorsque le questionnaire in-game/de fin est apparié à l'identifiant testeur local ou à un événement de complétion.",
+    j7Completed: "hasJ7 vaut true lorsqu'une réponse LimeSurvey J+7 est appariée à l'identifiant testeur local.",
+    fullChain: "hasAllQuestionnaires vaut true uniquement si le testeur possède screening + questionnaire de fin + réponse J+7.",
+    coherenceFlag: "coherenceFlag vaut true lorsque l'analyse qualitative de cohérence produit au moins un avertissement/signal pour ce testeur.",
+    progressionBlock: "progressionBlock vaut true si le blocage progression J+7 est oui, ou si les freins du questionnaire de fin mentionnent quoi faire/progression, ou si les flags de cohérence incluent un blocage progression.",
+    fusionBlock: "fusionBlock vaut true si le blocage fusion J+7 est oui, ou si les frustrations de fin mentionnent fusion/recettes, ou si failed_merge_ratio >= 0,30.",
+    technicalBlock: "technicalBlock vaut true si le blocage technique J+7 est oui, ou si runtimeErrors > 0.",
+    notificationIssue: "notificationIssue vaut true si des erreurs runtime de notification existent, ou si les textes de cohérence/frustration mentionnent les notifications.",
+    likedGraphics: "likedGraphics vaut true si le J+7 cite les graphismes parmi les aspects appréciés, ou si la réponse visuelle de fin mentionne un signal visuel positif/agréable.",
+    likedMusic: "likedMusic vaut true si le J+7 cite la musique parmi les aspects appréciés.",
+    dislikedMusic: "dislikedMusic vaut true si le J+7 cite la musique parmi les aspects moins appréciés, ou si la réponse son J+7 indique que la musique n'a pas plu.",
+    questionnaireFriction: "questionnaireFriction vaut true si le J+7 n'apprécie pas l'expérience de questionnement, ou si les frustrations de fin mentionnent les questionnaires, ou si questionRepeats >= 10.",
+    resultsInterest: "resultsInterest vaut true si le J+7 apprécie la consultation des résultats, ou si observatoryVisits > 0.",
+    ritualEngaged: "ritualEngaged vaut true si ritualCompleted >= 5.",
+    downloadPositive: "downloadPositive vaut true si la réponse J+7 de téléchargement d'une version plus complète est Oui ou Probablement.",
+    highScore: "highScore vaut true si le score global J+7 est >= 7/10.",
+    powerUser: "powerUser vaut true si activeDays >= 7 ou activeHours >= 2."
+  }
+};
+
+const THEME_MATCH_FORMULAS = {
+  en: {
+    guidance: "Relevant guidance users = progressionBlock.",
+    fusion: "Relevant fusion/grid users = fusionBlock OR failedMergeRatio >= 0.30 OR gridFillPct >= 50.",
+    questionnaire: "Relevant questionnaire users = questionnaireFriction OR questionRepeats >= 5.",
+    results: "Relevant results users = resultsInterest OR observatoryVisits > 0.",
+    audio: "Relevant audio users = likedMusic OR dislikedMusic OR any J+7 sound answer.",
+    technical: "Relevant technical users = technicalBlock OR notificationIssue.",
+    retention: "Relevant retention users = downloadPositive OR powerUser OR retainedD7 = 1.",
+    visual: "Relevant visual users = likedGraphics.",
+    ritual: "Relevant ritual users = ritualEngaged.",
+    product: "Relevant product users = coherenceFlag OR hasJ7."
+  },
+  fr: {
+    guidance: "Utilisateurs guidage concernés = progressionBlock.",
+    fusion: "Utilisateurs fusion/grille concernés = fusionBlock OU failedMergeRatio >= 0,30 OU gridFillPct >= 50.",
+    questionnaire: "Utilisateurs questionnaire concernés = questionnaireFriction OU questionRepeats >= 5.",
+    results: "Utilisateurs résultats concernés = resultsInterest OU observatoryVisits > 0.",
+    audio: "Utilisateurs audio concernés = likedMusic OU dislikedMusic OU toute réponse son J+7.",
+    technical: "Utilisateurs technique concernés = technicalBlock OU notificationIssue.",
+    retention: "Utilisateurs rétention concernés = downloadPositive OU powerUser OU retainedD7 = 1.",
+    visual: "Utilisateurs visuel concernés = likedGraphics.",
+    ritual: "Utilisateurs rituel concernés = ritualEngaged.",
+    product: "Utilisateurs produit concernés = coherenceFlag OU hasJ7."
+  }
+};
+
 const CARD_COPY = {
   en: {
     "MC-S01": {
@@ -858,6 +1013,7 @@ const state = {
   selectedUserId: null,
   lang: localStorage.getItem("kaleotopiaAnalyticsLang") || "en",
   cardTab: "main",
+  cardViewMode: localStorage.getItem("kaleotopiaCardViewMode") || "simple",
   sortMode: "impact"
 };
 
@@ -960,6 +1116,184 @@ function percent(part, total) {
   return (part / total) * 100;
 }
 
+function numericCount(values) {
+  return values.map(num).filter((v) => v !== null).length;
+}
+
+function lineJoin(lines) {
+  return lines.filter(Boolean).join("\n\n");
+}
+
+function sourceMetricMeta(metricKey) {
+  const lookup = METRIC_SOURCE_LOOKUP[metricKey];
+  if (!lookup?.metric || !state.data?.metricDictionary) return "";
+  const row = state.data.metricDictionary.find((item) => item.metric === lookup.metric);
+  if (!row) return lookup.metric;
+  return `${row.kpiId} · ${row.metric}`;
+}
+
+function sourceMetricFormula(metricKey) {
+  const lookup = METRIC_SOURCE_LOOKUP[metricKey];
+  if (!lookup) return "";
+  const groupFormula = METRIC_FORMULA_GROUPS[state.lang]?.[lookup.group] || METRIC_FORMULA_GROUPS.en[lookup.group] || "";
+  const source = sourceMetricMeta(metricKey);
+  if (!source) return groupFormula;
+  const label = state.lang === "fr" ? "Source KPI" : "Source KPI";
+  return lineJoin([groupFormula, `${label}: ${source}`]);
+}
+
+function aggregationFormula(type, context = {}) {
+  const lang = state.lang;
+  const scope = context.scope || (lang === "fr" ? "la sous-population filtrée actuelle" : "the current filtered subset");
+  const sample = context.sample !== undefined ? context.sample : "n";
+  if (lang === "fr") {
+    if (type === "percent") {
+      return `Valeur affichée = numérateur / dénominateur × 100. Valeurs actuelles : ${context.numerator ?? "n"} / ${context.denominator ?? "N"}. L'affichage est arrondi à l'unité ; survolez le pourcentage lui-même pour voir la valeur décimale exacte.`;
+    }
+    if (type === "median") {
+      return `Valeur affichée = médiane sur ${scope}. Les valeurs null/NA sont exclues. Méthode : trier les ${sample} valeurs numériques ; si n est impair, prendre la valeur centrale ; si n est pair, prendre la moyenne des deux valeurs centrales. La médiane est Q2 ; lorsque des quartiles sont affichés, Q1/Q3 utilisent le même échantillon trié, comme médianes des moitiés basse/haute.`;
+    }
+    if (type === "mean") {
+      return `Valeur affichée = moyenne arithmétique sur ${scope} : somme des valeurs numériques / nombre de valeurs numériques. Les valeurs null/NA sont exclues. Taille d'échantillon actuelle : ${sample}.`;
+    }
+    if (type === "count") {
+      return `Valeur affichée = nombre de ${scope}${context.condition ? ` qui vérifient : ${context.condition}` : ""}.`;
+    }
+    if (type === "direct") {
+      return `Valeur affichée = valeur calculée pour ce testeur, parsée en nombre quand nécessaire. NA si la valeur source est manquante ou non numérique.`;
+    }
+    if (type === "bar") {
+      return `Barre affichée = activeDays du testeur / maximum du slider "Jours actifs" × 100, borné entre 0 et 100. C'est une jauge visuelle de position dans la sous-population, pas un KPI séparé.`;
+    }
+    return "";
+  }
+  if (type === "percent") {
+    return `Displayed value = numerator / denominator × 100. Current values: ${context.numerator ?? "n"} / ${context.denominator ?? "N"}. The display is rounded to the nearest unit; hover the percentage itself to see the exact decimal value.`;
+  }
+  if (type === "median") {
+    return `Displayed value = median over ${scope}. Null/NA values are excluded. Method: sort the ${sample} numeric values ascending; if n is odd, take the middle value; if n is even, average the two middle values. The median is Q2; when quartiles are shown, Q1/Q3 use the same sorted sample as lower/upper-half medians.`;
+  }
+  if (type === "mean") {
+    return `Displayed value = arithmetic mean over ${scope}: sum of numeric values / count of numeric values. Null/NA values are excluded. Current numeric sample size: ${sample}.`;
+  }
+  if (type === "count") {
+    return `Displayed value = count of ${scope}${context.condition ? ` matching: ${context.condition}` : ""}.`;
+  }
+  if (type === "direct") {
+    return `Displayed value = this tester's calculated value, parsed as a number when needed. NA if the source value is missing or non-numeric.`;
+  }
+  if (type === "bar") {
+    return `Displayed bar = tester activeDays / active-days slider maximum × 100, clamped between 0 and 100. It is a visual position gauge, not a separate KPI.`;
+  }
+  return "";
+}
+
+function metricFormula(metricKey, aggregation = "direct", context = {}) {
+  return lineJoin([
+    aggregationFormula(aggregation, context),
+    sourceMetricFormula(metricKey)
+  ]);
+}
+
+function tooltipAttrs(text) {
+  return text ? `data-tooltip="${esc(text)}"` : "";
+}
+
+function setupInstantTooltips() {
+  if (window.__kaleotopiaInstantTooltipsReady) return;
+  window.__kaleotopiaInstantTooltipsReady = true;
+  const tooltip = document.querySelector(".instant-tooltip") || document.createElement("div");
+  tooltip.className = "instant-tooltip";
+  tooltip.hidden = true;
+  if (!tooltip.isConnected) document.body.append(tooltip);
+  let activeTarget = null;
+
+  const hide = () => {
+    activeTarget = null;
+    tooltip.hidden = true;
+  };
+
+  const show = (target) => {
+    const text = target?.getAttribute("data-tooltip");
+    if (!text) return hide();
+    activeTarget = target;
+    tooltip.textContent = text;
+    tooltip.hidden = false;
+    tooltip.style.left = "0px";
+    tooltip.style.top = "0px";
+    tooltip.style.setProperty("--tooltip-arrow-left", "50%");
+
+    const targetRect = target.getBoundingClientRect();
+    const tooltipRect = tooltip.getBoundingClientRect();
+    const gap = 10;
+    const margin = 8;
+    const placeAbove = targetRect.top >= tooltipRect.height + gap + margin;
+    const top = placeAbove ? targetRect.top - tooltipRect.height - gap : targetRect.bottom + gap;
+    const unclampedLeft = targetRect.left + targetRect.width / 2 - tooltipRect.width / 2;
+    const maxLeft = window.innerWidth - tooltipRect.width - margin;
+    const left = Math.max(margin, Math.min(unclampedLeft, maxLeft));
+    const arrowLeft = Math.max(12, Math.min(targetRect.left + targetRect.width / 2 - left, tooltipRect.width - 12));
+
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${Math.max(margin, top)}px`;
+    tooltip.style.setProperty("--tooltip-arrow-left", `${arrowLeft}px`);
+    tooltip.dataset.placement = placeAbove ? "top" : "bottom";
+  };
+
+  const handleEnter = (event) => {
+    const target = event.target.closest?.("[data-tooltip]");
+    if (!target || target.contains(event.relatedTarget)) return;
+    show(target);
+  };
+  const handleLeave = (event) => {
+    if (!activeTarget || !activeTarget.contains(event.target)) return;
+    if (activeTarget.contains(event.relatedTarget)) return;
+    hide();
+  };
+  document.addEventListener("pointerover", handleEnter);
+  document.addEventListener("pointerout", handleLeave);
+  document.addEventListener("mouseover", handleEnter);
+  document.addEventListener("mouseout", handleLeave);
+  document.addEventListener("focusin", (event) => {
+    const target = event.target.closest?.("[data-tooltip]");
+    if (target) show(target);
+  });
+  document.addEventListener("focusout", (event) => {
+    if (activeTarget && activeTarget.contains(event.target)) hide();
+  });
+  window.addEventListener("scroll", hide, true);
+  window.addEventListener("resize", hide);
+}
+
+function termDefinition(key) {
+  const definitions = {
+    en: {
+      coherenceFlag: "Coherence flag: a warning created by comparing questionnaires, bug reports and usage metrics. It marks a potential inconsistency, confirmation or important analytical entry point that deserves review.",
+      subset: "Filtered subset: the tester population that remains after applying the active filters on the left.",
+      impactScore: "Impact score: an internal sorting score used to surface testers with stronger warnings or richer evidence first. It is not a scientific KPI by itself."
+    },
+    fr: {
+      coherenceFlag: "Signal de cohérence : avertissement créé en croisant questionnaires, bug reports et métriques d'usage. Il marque une incohérence possible, une confirmation ou un point d'entrée analytique important à examiner.",
+      subset: "Sous-population filtrée : population de testeurs restante après application des filtres actifs à gauche.",
+      impactScore: "Score d'impact : score interne de tri qui remonte d'abord les testeurs avec signaux forts ou preuves plus riches. Ce n'est pas un KPI scientifique autonome."
+    }
+  };
+  return definitions[state.lang]?.[key] || definitions.en[key] || "";
+}
+
+function formulaTip(formula) {
+  if (!formula) return "";
+  const label = state.lang === "fr" ? "Formule" : "Formula";
+  return `<span class="formula-tip" tabindex="0" aria-label="${esc(`${label}: ${formula}`)}" ${tooltipAttrs(formula)}>i</span>`;
+}
+
+function metricLabel(label, formula) {
+  const labelHtml = /coherence|cohérence/i.test(label)
+    ? `<span class="defined-term" ${tooltipAttrs(termDefinition("coherenceFlag"))}>${esc(label)}</span>`
+    : esc(label);
+  return `<span class="metric-label">${labelHtml}${formulaTip(formula)}</span>`;
+}
+
 function fmtNumber(value, suffix = "") {
   const n = num(value);
   if (n === null) return "NA";
@@ -972,10 +1306,16 @@ function fmtPct(value) {
   const rounded = Math.round(n);
   const detailed = `${numberFormatter().format(n)}%`;
   return {
-    html: `<span class="pct-value" title="${esc(detailed)}">${esc(rounded)}%</span>`,
+    html: `<span class="pct-value" ${tooltipAttrs(percentTooltip(detailed))}>${esc(rounded)}%</span>`,
     text: `${rounded}%`,
     detailed
   };
+}
+
+function percentTooltip(detailed) {
+  return state.lang === "fr"
+    ? `Valeur exacte : ${detailed}\nFormule générale : numérateur / dénominateur × 100. Voir l'icône de formule du métrique pour le numérateur et le dénominateur précis.`
+    : `Exact value: ${detailed}\nGeneral formula: numerator / denominator × 100. See the metric formula icon for the precise numerator and denominator.`;
 }
 
 function valueHtml(value) {
@@ -995,7 +1335,7 @@ function textWithPercentHovers(value) {
     if (Number.isFinite(numeric)) {
       const rounded = Math.round(numeric);
       const detailed = match[0].replace(/\s+%$/, "%");
-      html += `<span class="pct-value" title="${esc(detailed)}">${esc(rounded)}%</span>`;
+      html += `<span class="pct-value" ${tooltipAttrs(percentTooltip(detailed))}>${esc(rounded)}%</span>`;
     } else {
       html += esc(match[0]);
     }
@@ -1114,6 +1454,21 @@ function renderChrome() {
   els.langEn.classList.toggle("active", state.lang === "en");
   els.langFr.classList.toggle("active", state.lang === "fr");
   els.generatedAt.textContent = state.data ? t("app.generatedAt", { date: state.data.generatedAt }) : t("app.loadingData");
+  els.sortImpact.removeAttribute("title");
+  els.sortActivity.removeAttribute("title");
+  els.sortScore.removeAttribute("title");
+  els.activeDaysMin.removeAttribute("title");
+  els.sortImpact.setAttribute("data-tooltip", sortFormula("impact"));
+  els.sortActivity.setAttribute("data-tooltip", sortFormula("activity"));
+  els.sortScore.setAttribute("data-tooltip", sortFormula("score"));
+  els.activeDaysMin.setAttribute("data-tooltip", sourceMetricFormula("activeDays"));
+  const switchLabel = state.cardViewMode === "simple" ? t("cards.switchToDetailed") : t("cards.switchToSimple");
+  els.cardViewModeToggle.removeAttribute("title");
+  els.cardViewModeToggle.setAttribute("data-tooltip", switchLabel);
+  els.cardViewModeToggle.setAttribute("aria-label", switchLabel);
+  els.cardViewModeToggle.classList.toggle("is-detail-mode", state.cardViewMode === "detail");
+  const flagsLabel = els.flagsOnly.closest("label")?.querySelector("span");
+  if (flagsLabel) flagsLabel.setAttribute("data-tooltip", termDefinition("coherenceFlag"));
 }
 
 function bindEvents() {
@@ -1181,6 +1536,13 @@ function bindEvents() {
     });
   });
 
+  els.cardViewModeToggle.addEventListener("click", () => {
+    state.cardViewMode = state.cardViewMode === "simple" ? "detail" : "simple";
+    localStorage.setItem("kaleotopiaCardViewMode", state.cardViewMode);
+    renderChrome();
+    renderActionCards();
+  });
+
   [
     [els.langEn, "en"],
     [els.langFr, "fr"]
@@ -1225,30 +1587,100 @@ function spark(percentValue, color = "var(--green)") {
   </svg>`;
 }
 
+function statFormula(key, s, users) {
+  const j7Users = users.filter((u) => u.hasJ7);
+  const withScore = j7Users.filter((u) => num(u.questionnaire?.j7?.score) !== null);
+  const countScope = state.lang === "fr" ? "testeurs qui passent tous les filtres actifs" : "testers passing every active filter";
+  const filteredScope = state.lang === "fr" ? "les testeurs filtrés actuels" : "the current filtered testers";
+  const j7Scope = state.lang === "fr" ? "les répondants J+7 dans la sous-population filtrée" : "J+7 respondents in the filtered subset";
+  const withScoresScope = state.lang === "fr" ? "les répondants J+7 avec score numérique" : "J+7 respondents with numeric scores";
+  switch (key) {
+    case "filteredTesters":
+      return lineJoin([
+        aggregationFormula("count", { scope: countScope }),
+        state.lang === "fr"
+          ? `Dénominateur de référence pour les couvertures globales : ${state.data.users.length} testeurs dans le dataset anonymisé.`
+          : `Reference denominator for global coverage: ${state.data.users.length} testers in the anonymized dataset.`
+      ]);
+    case "screeningCoverage":
+      return lineJoin([
+        aggregationFormula("percent", { numerator: s.screening, denominator: s.total }),
+        sourceMetricFormula("screeningCompleted")
+      ]);
+    case "endQuestionnaire":
+      return lineJoin([
+        aggregationFormula("percent", { numerator: s.end, denominator: s.total }),
+        sourceMetricFormula("endCompleted")
+      ]);
+    case "j7Coverage":
+      return lineJoin([
+        aggregationFormula("percent", { numerator: s.j7, denominator: s.total }),
+        sourceMetricFormula("j7Completed")
+      ]);
+    case "fullChain":
+      return lineJoin([
+        aggregationFormula("percent", { numerator: s.fullChain, denominator: s.total }),
+        sourceMetricFormula("fullChain")
+      ]);
+    case "medianActiveDays":
+      return metricFormula("activeDays", "median", { scope: filteredScope, sample: numericCount(users.map((u) => u.metrics?.activeDays)) });
+    case "medianActiveHours":
+      return metricFormula("activeHours", "median", { scope: filteredScope, sample: numericCount(users.map((u) => u.metrics?.activeHours)) });
+    case "d7Retained":
+      return lineJoin([
+        aggregationFormula("percent", { numerator: users.filter((u) => u.metrics?.retainedD7 === 1).length, denominator: users.length }),
+        sourceMetricFormula("retainedD7")
+      ]);
+    case "firstRecipeReached":
+      return lineJoin([
+        aggregationFormula("percent", { numerator: users.filter((u) => u.metrics?.reachedFirstRecipe === 1).length, denominator: users.length }),
+        sourceMetricFormula("reachedFirstRecipe")
+      ]);
+    case "j7ScoreAvg":
+      return metricFormula("j7Score", "mean", { scope: withScoresScope, sample: withScore.length });
+    case "progressionBlock":
+      return lineJoin([
+        aggregationFormula("percent", { numerator: j7Users.filter((u) => truthySignal(u, "progressionBlock")).length, denominator: j7Users.length }),
+        sourceMetricFormula("progressionBlock")
+      ]);
+    case "downloadPositive":
+      return lineJoin([
+        aggregationFormula("percent", { numerator: j7Users.filter((u) => truthySignal(u, "downloadPositive")).length, denominator: j7Users.length }),
+        sourceMetricFormula("downloadPositive")
+      ]);
+    default:
+      return aggregationFormula("count", { scope: filteredScope });
+  }
+}
+
 function renderStats(users) {
   const s = computeStats(users);
   const cards = [
-    [t("stat.filteredTesters"), fmtNumber(s.total), percent(s.total, state.data.users.length), "var(--blue)"],
-    [t("stat.screeningCoverage"), fmtPct(percent(s.screening, s.total)), percent(s.screening, s.total), "var(--green)"],
-    [t("stat.endQuestionnaire"), fmtPct(percent(s.end, s.total)), percent(s.end, s.total), "var(--green)"],
-    [t("stat.j7Coverage"), fmtPct(percent(s.j7, s.total)), percent(s.j7, s.total), "var(--violet)"],
-    [t("stat.fullChain"), fmtPct(percent(s.fullChain, s.total)), percent(s.fullChain, s.total), "var(--violet)"],
-    [t("stat.medianActiveDays"), fmtNumber(s.activeDaysMedian), Math.min(100, (s.activeDaysMedian || 0) * 5), "var(--blue)"],
-    [t("stat.medianActiveHours"), fmtNumber(s.activeHoursMedian, "h"), Math.min(100, (s.activeHoursMedian || 0) * 20), "var(--blue)"],
-    [t("stat.d7Retained"), fmtPct(s.d7), s.d7, "var(--green)"],
-    [t("stat.firstRecipeReached"), fmtPct(s.firstRecipe), s.firstRecipe, "var(--green)"],
-    [t("stat.j7ScoreAvg"), fmtNumber(s.j7Score, "/10"), (s.j7Score || 0) * 10, "var(--amber)"],
-    [t("stat.progressionBlock"), fmtPct(s.progressionBlock), s.progressionBlock, "var(--red)"],
-    [t("stat.downloadPositive"), fmtPct(s.downloadPositive), s.downloadPositive, "var(--green)"]
+    { key: "filteredTesters", label: t("stat.filteredTesters"), value: fmtNumber(s.total), bar: percent(s.total, state.data.users.length), color: "var(--blue)" },
+    { key: "screeningCoverage", label: t("stat.screeningCoverage"), value: fmtPct(percent(s.screening, s.total)), bar: percent(s.screening, s.total), color: "var(--green)" },
+    { key: "endQuestionnaire", label: t("stat.endQuestionnaire"), value: fmtPct(percent(s.end, s.total)), bar: percent(s.end, s.total), color: "var(--green)" },
+    { key: "j7Coverage", label: t("stat.j7Coverage"), value: fmtPct(percent(s.j7, s.total)), bar: percent(s.j7, s.total), color: "var(--violet)" },
+    { key: "fullChain", label: t("stat.fullChain"), value: fmtPct(percent(s.fullChain, s.total)), bar: percent(s.fullChain, s.total), color: "var(--violet)" },
+    { key: "medianActiveDays", label: t("stat.medianActiveDays"), value: fmtNumber(s.activeDaysMedian), bar: Math.min(100, (s.activeDaysMedian || 0) * 5), color: "var(--blue)" },
+    { key: "medianActiveHours", label: t("stat.medianActiveHours"), value: fmtNumber(s.activeHoursMedian, "h"), bar: Math.min(100, (s.activeHoursMedian || 0) * 20), color: "var(--blue)" },
+    { key: "d7Retained", label: t("stat.d7Retained"), value: fmtPct(s.d7), bar: s.d7, color: "var(--green)" },
+    { key: "firstRecipeReached", label: t("stat.firstRecipeReached"), value: fmtPct(s.firstRecipe), bar: s.firstRecipe, color: "var(--green)" },
+    { key: "j7ScoreAvg", label: t("stat.j7ScoreAvg"), value: fmtNumber(s.j7Score, "/10"), bar: (s.j7Score || 0) * 10, color: "var(--amber)" },
+    { key: "progressionBlock", label: t("stat.progressionBlock"), value: fmtPct(s.progressionBlock), bar: s.progressionBlock, color: "var(--red)" },
+    { key: "downloadPositive", label: t("stat.downloadPositive"), value: fmtPct(s.downloadPositive), bar: s.downloadPositive, color: "var(--green)" }
   ];
-  els.statsGrid.innerHTML = cards.map(([label, value, bar, color]) => `
+  els.statsGrid.innerHTML = cards.map((card) => {
+    const formula = statFormula(card.key, s, users);
+    return `
     <article class="stat-card">
-      <div class="label">${esc(label)}</div>
-      <div class="value">${valueHtml(value)}</div>
-      ${spark(bar, color)}
+      <div class="label">${metricLabel(card.label, formula)}</div>
+      <div class="value">${valueHtml(card.value)}</div>
+      ${spark(card.bar, card.color)}
     </article>
-  `).join("");
+  `;
+  }).join("");
   els.subsetSentence.textContent = t("overview.subsetSentence", { shown: s.total, total: state.data.users.length, flags: s.flags });
+  els.subsetSentence.setAttribute("data-tooltip", lineJoin([termDefinition("subset"), termDefinition("coherenceFlag")]));
 }
 
 function actionCardsForView() {
@@ -1291,21 +1723,25 @@ function cardPills(card) {
 function renderActionCards() {
   const cards = actionCardsForView();
   if (!cards.some((card) => card.id === state.selectedActionId)) {
-    state.selectedActionId = cards[0]?.id || null;
+    state.selectedActionId = null;
   }
+  const simpleMode = state.cardViewMode === "simple";
+  els.actionCards.classList.toggle("is-simple-mode", simpleMode);
   els.actionCards.innerHTML = cards.map((card) => `
-    <button class="action-card ${card.kind ? "main-card" : ""} ${card.id === state.selectedActionId ? "is-selected" : ""}" data-action-id="${esc(card.id)}" data-priority="${esc(card.priority || "")}" data-kind="${esc(card.kind || "")}" type="button">
+    <button class="action-card ${card.kind ? "main-card" : ""} ${simpleMode ? "is-simple-card" : "is-detail-card"} ${card.id === state.selectedActionId ? "is-selected" : ""}" data-action-id="${esc(card.id)}" data-priority="${esc(card.priority || "")}" data-kind="${esc(card.kind || "")}" type="button">
       <div class="card-kicker">
         ${cardPills(card)}
       </div>
       <h3>${esc(card.title)}</h3>
-      <p>${textWithPercentHovers(card.mainEvidence)}</p>
-      <p><strong>${esc(cardActionLabel(card))}:</strong> ${textWithPercentHovers(card.nextAction)}</p>
+      ${simpleMode ? "" : `
+        <p>${textWithPercentHovers(card.mainEvidence)}</p>
+        <p><strong>${esc(cardActionLabel(card))}:</strong> ${textWithPercentHovers(card.nextAction)}</p>
+      `}
     </button>
   `).join("");
   els.actionCards.querySelectorAll("[data-action-id]").forEach((button) => {
     button.addEventListener("click", () => {
-      state.selectedActionId = button.dataset.actionId;
+      state.selectedActionId = state.selectedActionId === button.dataset.actionId ? null : button.dataset.actionId;
       renderActionCards();
       renderActionDetail();
     });
@@ -1334,6 +1770,164 @@ function userMatchesTheme(user, theme) {
       return truthySignal(user, "ritualEngaged");
     default:
       return truthySignal(user, "coherenceFlag") || user.hasJ7;
+  }
+}
+
+function themeMatchFormula(theme) {
+  return THEME_MATCH_FORMULAS[state.lang]?.[theme] || THEME_MATCH_FORMULAS.en[theme] || THEME_MATCH_FORMULAS.en.product;
+}
+
+function relevantScope(theme) {
+  return state.lang === "fr"
+    ? `les utilisateurs concernés par le thème ${themeLabel(theme)} dans la sous-population filtrée`
+    : `users relevant to the ${themeLabel(theme)} theme within the filtered subset`;
+}
+
+function currentSubsetScope() {
+  return state.lang === "fr" ? "la sous-population filtrée actuelle" : "the current filtered subset";
+}
+
+function rawJ7Formula(description) {
+  return state.lang === "fr"
+    ? `Valeur affichée = comptage de réponses brutes J+7 : ${description}. Les textes de réponse restent dans leur langue originale.`
+    : `Displayed value = count of raw J+7 responses: ${description}. Response text remains in its original language.`;
+}
+
+function impactFormula(label, theme, users, relevant, j7Users) {
+  const relevantText = relevantScope(theme);
+  const subsetText = currentSubsetScope();
+  const scoreSample = numericCount(relevant.map((u) => u.questionnaire?.j7?.score));
+  switch (label) {
+    case "Relevant users":
+      return aggregationFormula("count", { scope: subsetText, condition: themeMatchFormula(theme) });
+    case "J+7 progression block":
+      return lineJoin([
+        aggregationFormula("percent", { numerator: users.filter((u) => truthySignal(u, "progressionBlock")).length, denominator: j7Users.length }),
+        sourceMetricFormula("progressionBlock")
+      ]);
+    case "Median active days":
+    case "Active days median":
+      return metricFormula("activeDays", "median", { scope: relevantText, sample: numericCount(relevant.map((u) => u.metrics?.activeDays)) });
+    case "Median active hours":
+      return metricFormula("activeHours", "median", { scope: relevantText, sample: numericCount(relevant.map((u) => u.metrics?.activeHours)) });
+    case "Full chain users":
+      return lineJoin([
+        aggregationFormula("count", { scope: subsetText, condition: "hasAllQuestionnaires = true" }),
+        sourceMetricFormula("fullChain")
+      ]);
+    case "Coherence flags":
+    case "Flags":
+      return lineJoin([
+        aggregationFormula("count", { scope: theme === "visual" ? relevantText : subsetText, condition: "coherenceFlag = true" }),
+        sourceMetricFormula("coherenceFlag")
+      ]);
+    case "First recipe reached":
+      return lineJoin([
+        aggregationFormula("percent", { numerator: users.filter((u) => u.metrics?.reachedFirstRecipe === 1).length, denominator: users.length }),
+        sourceMetricFormula("reachedFirstRecipe")
+      ]);
+    case "Failed merge median":
+      return metricFormula("failedMergeRatio", "median", { scope: relevantText, sample: numericCount(relevant.map((u) => u.metrics?.failedMergeRatio)) });
+    case "Grid fill median":
+      return metricFormula("gridFillPct", "median", { scope: relevantText, sample: numericCount(relevant.map((u) => u.metrics?.gridFillPct)) });
+    case "Interactions / recipe":
+      return metricFormula("interactionsPerRecipe", "median", { scope: relevantText, sample: numericCount(relevant.map((u) => u.metrics?.interactionsPerRecipe)) });
+    case "Runtime error users":
+      return lineJoin([
+        aggregationFormula("count", { scope: relevantText, condition: "runtimeErrors > 0" }),
+        sourceMetricFormula("runtimeErrors")
+      ]);
+    case "J+7 fusion blocks":
+      return rawJ7Formula(state.lang === "fr" ? "blocker fusion = Oui parmi les utilisateurs concernés" : "fusion blocker = Oui among relevant users");
+    case "BFI distinct median":
+      return metricFormula("bfiDistinct", "median", { scope: relevantText, sample: numericCount(relevant.map((u) => u.metrics?.bfiDistinct)) });
+    case "Question repeats median":
+      return metricFormula("questionRepeats", "median", { scope: relevantText, sample: numericCount(relevant.map((u) => u.metrics?.questionRepeats)) });
+    case "Question instances median":
+      return metricFormula("questionnaireInstances", "median", { scope: relevantText, sample: numericCount(relevant.map((u) => u.metrics?.questionnaireInstances)) });
+    case "J+7 disliked questions":
+      return rawJ7Formula(state.lang === "fr" ? "option de questionnement présente dans les aspects les moins appréciés" : "questioning option present in least-liked aspects");
+    case "Seconds / question":
+      return metricFormula("secondsPerQuestion", "median", { scope: relevantText, sample: numericCount(relevant.map((u) => u.metrics?.secondsPerQuestion)) });
+    case "Observatory visits median":
+      return metricFormula("observatoryVisits", "median", { scope: relevantText, sample: numericCount(relevant.map((u) => u.metrics?.observatoryVisits)) });
+    case "Journal open median":
+      return metricFormula("journalOpenRate", "median", { scope: relevantText, sample: numericCount(relevant.map((u) => u.metrics?.journalOpenRate)) });
+    case "J+7 liked results":
+      return rawJ7Formula(state.lang === "fr" ? "option résultats/personnalité présente dans les aspects les plus appréciés" : "results/personality option present in most-liked aspects");
+    case "Download positive":
+    case "J+7 positive download":
+      return lineJoin([
+        aggregationFormula("percent", { numerator: relevant.filter((u) => truthySignal(u, "downloadPositive")).length, denominator: relevant.length }),
+        sourceMetricFormula("downloadPositive")
+      ]);
+    case "Score avg":
+    case "J+7 score":
+      return metricFormula("j7Score", "mean", { scope: relevantText, sample: scoreSample });
+    case "Liked music":
+      return lineJoin([
+        aggregationFormula("count", { scope: relevantText, condition: "likedMusic = true" }),
+        sourceMetricFormula("likedMusic")
+      ]);
+    case "Disliked music":
+      return lineJoin([
+        aggregationFormula("count", { scope: relevantText, condition: "dislikedMusic = true" }),
+        sourceMetricFormula("dislikedMusic")
+      ]);
+    case "Volume session median":
+      return metricFormula("soundSessionRate", "median", { scope: relevantText, sample: numericCount(relevant.map((u) => u.metrics?.soundSessionRate)) });
+    case "J+7 sound answers":
+      return rawJ7Formula(state.lang === "fr" ? "réponse son J+7 non vide parmi les utilisateurs concernés" : "non-empty J+7 sound answer among relevant users");
+    case "Strict contradictions":
+      return lineJoin([
+        aggregationFormula("count", { scope: relevantText, condition: "soundSessionRate = 0 and J+7 sound answer mentions speakers/headphones" }),
+        sourceMetricFormula("soundSessionRate")
+      ]);
+    case "Notification error users":
+      return lineJoin([
+        aggregationFormula("count", { scope: relevantText, condition: "notificationRuntimeErrors > 0" }),
+        sourceMetricFormula("notificationRuntimeErrors")
+      ]);
+    case "p95 load median":
+      return metricFormula("p95LoadMs", "median", { scope: relevantText, sample: numericCount(relevant.map((u) => u.metrics?.p95LoadMs)) });
+    case "Low FPS median":
+      return metricFormula("lowFpsRate", "median", { scope: relevantText, sample: numericCount(relevant.map((u) => u.metrics?.lowFpsRate)) });
+    case "Tech blocks J+7":
+      return rawJ7Formula(state.lang === "fr" ? "blocker technique = Oui parmi les utilisateurs concernés" : "technical blocker = Oui among relevant users");
+    case "D7 retained":
+      return lineJoin([
+        aggregationFormula("percent", { numerator: relevant.filter((u) => u.metrics?.retainedD7 === 1).length, denominator: relevant.length }),
+        sourceMetricFormula("retainedD7")
+      ]);
+    case "High J+7 score":
+    case "High score users":
+      return lineJoin([
+        aggregationFormula("count", { scope: relevantText, condition: "J+7 score >= 7/10" }),
+        sourceMetricFormula("highScore")
+      ]);
+    case "J+7 liked graphics":
+      return rawJ7Formula(state.lang === "fr" ? "option rendu graphique présente dans les aspects les plus appréciés" : "graphic rendering option present in most-liked aspects");
+    case "Rituals median":
+      return metricFormula("ritualCompleted", "median", { scope: relevantText, sample: numericCount(relevant.map((u) => u.metrics?.ritualCompleted)) });
+    case "Completion median":
+      return metricFormula("ritualCompletionRate", "median", { scope: relevantText, sample: numericCount(relevant.map((u) => u.metrics?.ritualCompletionRate)) });
+    case "Power users":
+      return lineJoin([
+        aggregationFormula("count", { scope: relevantText, condition: "activeDays >= 7 OR activeHours >= 2" }),
+        sourceMetricFormula("powerUser")
+      ]);
+    case "Progression blocks":
+      return lineJoin([
+        aggregationFormula("count", { scope: relevantText, condition: "progressionBlock = true" }),
+        sourceMetricFormula("progressionBlock")
+      ]);
+    case "J+7 users":
+      return lineJoin([
+        aggregationFormula("count", { scope: relevantText, condition: "hasJ7 = true" }),
+        sourceMetricFormula("j7Completed")
+      ]);
+    default:
+      return aggregationFormula("count", { scope: relevantText });
   }
 }
 
@@ -1422,7 +2016,12 @@ function themeImpact(theme, users) {
     ["Flags", relevant.filter((u) => truthySignal(u, "coherenceFlag")).length],
     ["J+7 users", relevant.filter((u) => u.hasJ7).length]
   ];
-  return rows.map(([label, value]) => [IMPACT_LABELS[state.lang]?.[label] || label, value]);
+  return rows.map(([label, value]) => ({
+    rawLabel: label,
+    label: IMPACT_LABELS[state.lang]?.[label] || label,
+    value,
+    formula: impactFormula(label, theme, users, relevant, j7Users)
+  }));
 }
 
 function scoreUserImpact(user) {
@@ -1432,6 +2031,55 @@ function scoreUserImpact(user) {
     + (truthySignal(user, "technicalBlock") ? 3 : 0)
     + (truthySignal(user, "lowScore") ? 3 : 0)
     + Math.min(user.metrics?.activeDays || 0, 10) * 0.3;
+}
+
+function impactScoreFormula() {
+  return state.lang === "fr"
+    ? "Score d'impact testeur = 8 si coherenceFlag + 5 si progressionBlock + 3 si fusionBlock + 3 si technicalBlock + 3 si lowScore + min(activeDays, 10) × 0,3. Ce score sert uniquement au tri/priorisation des exemples, pas comme KPI scientifique autonome."
+    : "Tester impact score = 8 if coherenceFlag + 5 if progressionBlock + 3 if fusionBlock + 3 if technicalBlock + 3 if lowScore + min(activeDays, 10) × 0.3. This score is only used to sort/prioritize examples, not as a standalone scientific KPI.";
+}
+
+function sortFormula(mode) {
+  if (mode === "impact") return impactScoreFormula();
+  if (mode === "activity") {
+    return lineJoin([
+      state.lang === "fr"
+        ? "Tri activité = activeDays décroissant, puis activeHours décroissant en cas d'égalité."
+        : "Activity sort = activeDays descending, then activeHours descending on ties.",
+      sourceMetricFormula("activeDays"),
+      sourceMetricFormula("activeHours")
+    ]);
+  }
+  return lineJoin([
+    state.lang === "fr"
+      ? "Tri score = score global J+7 décroissant. Les valeurs manquantes sont traitées comme -1 pour rester en bas de liste."
+      : "Score sort = J+7 global score descending. Missing values are treated as -1 so they stay at the bottom of the list.",
+    sourceMetricFormula("j7Score")
+  ]);
+}
+
+function testerSummaryFormula() {
+  return lineJoin([
+    metricFormula("activeDays", "direct"),
+    metricFormula("activeHours", "direct"),
+    metricFormula("sessions", "direct"),
+    sourceMetricFormula("j7Score")
+  ]);
+}
+
+function testerBarFormula() {
+  return lineJoin([
+    aggregationFormula("bar"),
+    sourceMetricFormula("activeDays")
+  ]);
+}
+
+function firstRecipeFormula() {
+  return lineJoin([
+    aggregationFormula("direct"),
+    sourceMetricFormula("reachedFirstRecipe"),
+    sourceMetricFormula("timeToFirstRecipe")
+  ]);
 }
 
 function sortedSupportingUsers(theme, users, limit = 10) {
@@ -1455,9 +2103,14 @@ function sourceLinesForCard(card, users) {
 function renderActionDetail() {
   const activeCards = actionCardsForView();
   const allCards = [...(state.data.mainCards || []), ...(state.data.actionCards || [])].map(localizedCard);
-  const card = activeCards.find((item) => item.id === state.selectedActionId) || allCards.find((item) => item.id === state.selectedActionId) || activeCards[0];
+  const card = state.selectedActionId
+    ? activeCards.find((item) => item.id === state.selectedActionId) || allCards.find((item) => item.id === state.selectedActionId)
+    : null;
+  els.workbench.classList.toggle("is-detail-open", Boolean(card));
+  els.workbench.classList.toggle("is-detail-closed", !card);
+  els.detailPane.hidden = !card;
   if (!card) {
-    els.actionDetail.innerHTML = `<div class="empty-state">${esc(t("detail.noCard"))}</div>`;
+    els.actionDetail.innerHTML = "";
     return;
   }
   const impacts = themeImpact(card.theme, state.filteredUsers);
@@ -1479,8 +2132,8 @@ function renderActionDetail() {
         <section class="detail-section">
           <h3>${esc(t("detail.subsetImpact"))}</h3>
           <div class="impact-grid">
-            ${impacts.map(([label, value]) => `
-              <div class="mini-card"><span>${esc(label)}</span><strong>${valueHtml(value)}</strong></div>
+            ${impacts.map((item) => `
+              <div class="mini-card"><span>${metricLabel(item.label, item.formula)}</span><strong>${valueHtml(item.value)}</strong></div>
             `).join("")}
           </div>
         </section>
@@ -1529,9 +2182,10 @@ function renderActionDetail() {
 
 function evidenceLine(line) {
   const localizedLine = localizedSourceLine(line);
+  const sourceTooltip = /coherence|cohérence/i.test(localizedLine.source) ? termDefinition("coherenceFlag") : "";
   return `
     <article class="evidence-line">
-      <span class="source">${esc(localizedLine.source)}${localizedLine.userId ? ` · ${esc(localizedLine.userId)}` : ""}</span>
+      <span class="source" ${tooltipAttrs(sourceTooltip)}>${esc(localizedLine.source)}${localizedLine.userId ? ` · ${esc(localizedLine.userId)}` : ""}</span>
       <p>${textWithPercentHovers(localizedLine.text)}</p>
       ${localizedLine.context ? `<small>${textWithPercentHovers(localizedLine.context)}</small>` : ""}
     </article>
@@ -1542,11 +2196,12 @@ function testerExample(user) {
   const flags = user.questionnaire?.internal?.flags || [];
   const liked = user.questionnaire?.j7?.liked || [];
   const disliked = user.questionnaire?.j7?.disliked || [];
+  const summaryFormula = testerSummaryFormula();
   return `
     <button class="tester-row" type="button" data-user-pick="${esc(user.id)}">
       <div class="tester-row__top">
         <strong>${esc(user.id)}</strong>
-        <small>${fmtNumber(user.metrics?.activeDays)}${state.lang === "fr" ? "j" : "d"} · ${fmtNumber(user.metrics?.activeHours, "h")} · ${esc(t("tester.score"))} ${fmtNumber(user.questionnaire?.j7?.score, "/10")}</small>
+        <small ${tooltipAttrs(summaryFormula)}>${fmtNumber(user.metrics?.activeDays)}${state.lang === "fr" ? "j" : "d"} · ${fmtNumber(user.metrics?.activeHours, "h")} · ${esc(t("tester.score"))} ${fmtNumber(user.questionnaire?.j7?.score, "/10")}</small>
       </div>
       <small>${textWithPercentHovers([flags[0], liked[0] && `${t("tester.liked")}: ${liked[0]}`, disliked[0] && `${t("tester.disliked")}: ${disliked[0]}`].filter(Boolean).join(" · ") || t("tester.noQuestionnaireLine"))}</small>
     </button>
@@ -1570,6 +2225,8 @@ function renderTesterList() {
   if (!users.some((user) => user.id === state.selectedUserId)) {
     state.selectedUserId = users[0]?.id || null;
   }
+  const summaryFormula = testerSummaryFormula();
+  const barFormula = testerBarFormula();
   els.testerList.innerHTML = users.map((user) => {
     const m = user.metrics || {};
     const score = user.questionnaire?.j7?.score;
@@ -1582,11 +2239,11 @@ function renderTesterList() {
         </div>
         <div class="pill-row">
           ${truthySignal(user, "progressionBlock") ? `<span class="pill priority-p0">${esc(t("tester.progression"))}</span>` : ""}
-          ${truthySignal(user, "coherenceFlag") ? `<span class="pill priority-p1">${esc(t("tester.flag"))}</span>` : ""}
+          ${truthySignal(user, "coherenceFlag") ? `<span class="pill priority-p1" ${tooltipAttrs(termDefinition("coherenceFlag"))}>${esc(t("tester.flag"))}</span>` : ""}
           ${truthySignal(user, "downloadPositive") ? `<span class="pill">${esc(t("tester.downloadPositive"))}</span>` : ""}
         </div>
-        <small>${fmtNumber(m.activeDays)} ${esc(t("tester.activeDays"))} · ${fmtNumber(m.sessions)} ${esc(t("tester.sessions"))} · ${esc(t("tester.score"))} ${fmtNumber(score, "/10")}</small>
-        <div class="bar"><span style="width:${barValue}%"></span></div>
+        <small ${tooltipAttrs(summaryFormula)}>${fmtNumber(m.activeDays)} ${esc(t("tester.activeDays"))} · ${fmtNumber(m.sessions)} ${esc(t("tester.sessions"))} · ${esc(t("tester.score"))} ${fmtNumber(score, "/10")}</small>
+        <div class="bar" ${tooltipAttrs(barFormula)}><span style="width:${barValue}%"></span></div>
       </button>
     `;
   }).join("") || `<div class="empty-state">${esc(t("tester.empty"))}</div>`;
@@ -1600,9 +2257,9 @@ function renderTesterList() {
   renderTesterDetail();
 }
 
-function kv(label, value) {
+function kv(label, value, formula = "") {
   const displayValue = value === null || value === undefined || value === "" ? "NA" : value;
-  return `<div class="kv"><span>${esc(label)}</span><span>${valueHtml(displayValue)}</span></div>`;
+  return `<div class="kv"><span>${formula ? metricLabel(label, formula) : esc(label)}</span><span>${valueHtml(displayValue)}</span></div>`;
 }
 
 function renderTesterDetail() {
@@ -1626,7 +2283,7 @@ function renderTesterDetail() {
           ${user.hasEndQuestionnaire ? `<span class="pill">${esc(t("tester.end"))}</span>` : ""}
           ${user.hasJ7 ? `<span class="pill">J+7</span>` : ""}
           ${user.hasAllQuestionnaires ? `<span class="pill theme">${esc(t("tester.fullChain"))}</span>` : ""}
-          ${truthySignal(user, "coherenceFlag") ? `<span class="pill priority-p1">${esc(t("tester.coherenceFlag"))}</span>` : ""}
+          ${truthySignal(user, "coherenceFlag") ? `<span class="pill priority-p1" ${tooltipAttrs(termDefinition("coherenceFlag"))}>${esc(t("tester.coherenceFlag"))}</span>` : ""}
         </div>
       </div>
       <div class="muted">${esc(user.platforms?.join(", ") || "NA")}<br>${esc(user.clientVersions?.join(", ") || "NA")}</div>
@@ -1646,17 +2303,17 @@ function renderTesterDetail() {
 
       <section>
         <h3>${esc(t("section.usage"))}</h3>
-        ${kv(t("kv.activeDays"), fmtNumber(m.activeDays))}
-        ${kv(t("kv.activeHours"), fmtNumber(m.activeHours, "h"))}
-        ${kv(t("kv.sessions"), fmtNumber(m.sessions))}
-        ${kv(t("kv.firstRecipe"), m.reachedFirstRecipe === 1 ? t("kv.firstRecipeYes", { value: fmtNumber(m.timeToFirstRecipeMin) }) : t("kv.no"))}
-        ${kv(t("kv.failedMerge"), fmtPct((m.failedMergeRatio ?? null) === null ? null : m.failedMergeRatio * 100))}
-        ${kv(t("kv.gridFill"), fmtPct(m.gridFillPct))}
-        ${kv(t("kv.bfiDistinct"), fmtNumber(m.bfiDistinct))}
-        ${kv(t("kv.questionRepeats"), fmtNumber(m.questionRepeats))}
-        ${kv(t("kv.rituals"), fmtNumber(m.ritualCompleted))}
-        ${kv(t("kv.observatoryVisits"), fmtNumber(m.observatoryVisits))}
-        ${kv(t("kv.runtimeErrors"), fmtNumber(m.runtimeErrors))}
+        ${kv(t("kv.activeDays"), fmtNumber(m.activeDays), metricFormula("activeDays", "direct"))}
+        ${kv(t("kv.activeHours"), fmtNumber(m.activeHours, "h"), metricFormula("activeHours", "direct"))}
+        ${kv(t("kv.sessions"), fmtNumber(m.sessions), metricFormula("sessions", "direct"))}
+        ${kv(t("kv.firstRecipe"), m.reachedFirstRecipe === 1 ? t("kv.firstRecipeYes", { value: fmtNumber(m.timeToFirstRecipeMin) }) : t("kv.no"), firstRecipeFormula())}
+        ${kv(t("kv.failedMerge"), fmtPct((m.failedMergeRatio ?? null) === null ? null : m.failedMergeRatio * 100), metricFormula("failedMergeRatio", "direct"))}
+        ${kv(t("kv.gridFill"), fmtPct(m.gridFillPct), metricFormula("gridFillPct", "direct"))}
+        ${kv(t("kv.bfiDistinct"), fmtNumber(m.bfiDistinct), metricFormula("bfiDistinct", "direct"))}
+        ${kv(t("kv.questionRepeats"), fmtNumber(m.questionRepeats), metricFormula("questionRepeats", "direct"))}
+        ${kv(t("kv.rituals"), fmtNumber(m.ritualCompleted), metricFormula("ritualCompleted", "direct"))}
+        ${kv(t("kv.observatoryVisits"), fmtNumber(m.observatoryVisits), metricFormula("observatoryVisits", "direct"))}
+        ${kv(t("kv.runtimeErrors"), fmtNumber(m.runtimeErrors), metricFormula("runtimeErrors", "direct"))}
       </section>
     </div>
 
@@ -1675,7 +2332,7 @@ function renderTesterDetail() {
         <h3>${esc(t("section.j7"))}</h3>
         ${kv(t("kv.thought"), q.j7?.thought)}
         ${kv(t("kv.effect"), q.j7?.effect)}
-        ${kv(t("kv.score"), q.j7?.score === null || q.j7?.score === undefined ? "NA" : `${fmtNumber(q.j7.score)}/10`)}
+        ${kv(t("kv.score"), q.j7?.score === null || q.j7?.score === undefined ? "NA" : `${fmtNumber(q.j7.score)}/10`, metricFormula("j7Score", "direct"))}
         ${kv(t("kv.downloadFuller"), q.j7?.download)}
         ${kv(t("kv.blockProgression"), q.j7?.blockers?.progression)}
         ${kv(t("kv.blockFusion"), q.j7?.blockers?.fusion)}
@@ -1690,7 +2347,7 @@ function renderTesterDetail() {
       <h3>${esc(t("section.comments"))}</h3>
       <div class="evidence-list">
         ${(q.j7?.comments || []).map((comment) => `<article class="evidence-line"><span class="source">${esc(sourceLabel("J+7 verbatim"))}</span><p>${textWithPercentHovers(comment)}</p></article>`).join("")}
-        ${flags.map((flag) => `<article class="evidence-line"><span class="source">${esc(sourceLabel("Coherence flag"))}</span><p>${textWithPercentHovers(flag)}</p></article>`).join("")}
+        ${flags.map((flag) => `<article class="evidence-line"><span class="source" ${tooltipAttrs(termDefinition("coherenceFlag"))}>${esc(sourceLabel("Coherence flag"))}</span><p>${textWithPercentHovers(flag)}</p></article>`).join("")}
         ${confirmations.slice(0, 6).map((line) => `<article class="evidence-line"><span class="source">${esc(sourceLabel("Confirmation"))}</span><p>${textWithPercentHovers(line)}</p></article>`).join("")}
         ${!(q.j7?.comments || []).length && !flags.length && !confirmations.length ? `<div class="empty-state">${esc(t("section.noQualitative"))}</div>` : ""}
       </div>
@@ -1725,6 +2382,7 @@ function render() {
 
 async function boot() {
   try {
+    setupInstantTooltips();
     renderChrome();
     const response = await fetch("/assets/analytics-data.json");
     if (!response.ok) throw new Error(t("app.dataRequestFailed", { status: response.status }));
@@ -1732,7 +2390,7 @@ async function boot() {
     renderChrome();
     initFilters(state.data);
     bindEvents();
-    state.selectedActionId = state.data.mainCards?.[0]?.id || state.data.actionCards[0]?.id || null;
+    state.selectedActionId = null;
     render();
   } catch (error) {
     document.querySelector("#app").innerHTML = `<main class="dashboard"><div class="empty-state">${esc(t("app.loadError", { message: error.message }))}</div></main>`;
