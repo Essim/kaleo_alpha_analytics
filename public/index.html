@@ -11,62 +11,66 @@
       <header class="topbar">
         <div>
           <p class="eyebrow">Kaleotopia Alpha</p>
-          <h1>Analytics Visualizer</h1>
+          <h1 data-i18n="app.title">Analytics Visualizer</h1>
         </div>
         <div class="topbar__meta">
-          <span id="generatedAt">Loading data</span>
-          <span>Local tester ids only</span>
+          <div class="segmented language-switch" aria-label="Language" data-i18n-aria-label="language.aria">
+            <button id="langEn" type="button" class="active">EN</button>
+            <button id="langFr" type="button">FR</button>
+          </div>
+          <span id="generatedAt" data-i18n="app.loadingData">Loading data</span>
+          <span data-i18n="app.localIds">Local tester ids only</span>
         </div>
       </header>
 
       <div class="app-shell">
-        <aside class="filters" aria-label="Dynamic filters">
+        <aside class="filters" aria-label="Dynamic filters" data-i18n-aria-label="filters.aria">
           <div class="filter-header">
-            <h2>Filter testers</h2>
-            <button id="resetFilters" type="button">Reset</button>
+            <h2 data-i18n="filters.title">Filter testers</h2>
+            <button id="resetFilters" type="button" data-i18n="filters.reset">Reset</button>
           </div>
 
           <label class="field">
-            <span>Search tester</span>
-            <input id="searchInput" type="search" placeholder="KT-001, version, platform">
+            <span data-i18n="filters.search">Search tester</span>
+            <input id="searchInput" type="search" placeholder="KT-001, version, platform" data-i18n-placeholder="filters.searchPlaceholder">
           </label>
 
           <div class="field-grid">
             <label class="field">
-              <span>Age</span>
+              <span data-i18n="filters.age">Age</span>
               <select id="ageFilter"></select>
             </label>
             <label class="field">
-              <span>Platform</span>
+              <span data-i18n="filters.platform">Platform</span>
               <select id="platformFilter"></select>
             </label>
           </div>
 
           <label class="field">
-            <span>Wellbeing apps</span>
+            <span data-i18n="filters.wellbeing">Wellbeing apps</span>
             <select id="wellnessFilter"></select>
           </label>
 
           <label class="field">
-            <span>J+7 download intent</span>
+            <span data-i18n="filters.downloadIntent">J+7 download intent</span>
             <select id="downloadFilter"></select>
           </label>
 
           <div class="range-block">
             <div class="range-block__label">
-              <span>Active days</span>
+              <span data-i18n="filters.activeDays">Active days</span>
               <strong id="activeDaysLabel">0 - max</strong>
             </div>
             <input id="activeDaysMin" type="range" min="0" max="30" value="0">
           </div>
 
           <div class="toggle-list">
-            <label><input id="screeningOnly" type="checkbox"> Has screening</label>
-            <label><input id="endOnly" type="checkbox"> Has end questionnaire</label>
-            <label><input id="j7Only" type="checkbox"> Has J+7</label>
-            <label><input id="allQuestionnairesOnly" type="checkbox"> Full questionnaire chain</label>
-            <label><input id="flagsOnly" type="checkbox"> Coherence flags only</label>
-            <label><input id="progressionOnly" type="checkbox"> Progression block signal</label>
+            <label><input id="screeningOnly" type="checkbox"> <span data-i18n="filters.hasScreening">Has screening</span></label>
+            <label><input id="endOnly" type="checkbox"> <span data-i18n="filters.hasEnd">Has end questionnaire</span></label>
+            <label><input id="j7Only" type="checkbox"> <span data-i18n="filters.hasJ7">Has J+7</span></label>
+            <label><input id="allQuestionnairesOnly" type="checkbox"> <span data-i18n="filters.fullChain">Full questionnaire chain</span></label>
+            <label><input id="flagsOnly" type="checkbox"> <span data-i18n="filters.flagsOnly">Coherence flags only</span></label>
+            <label><input id="progressionOnly" type="checkbox"> <span data-i18n="filters.progressionOnly">Progression block signal</span></label>
           </div>
         </aside>
 
@@ -74,10 +78,10 @@
           <section class="overview">
             <div class="section-title">
               <div>
-                <p class="eyebrow">Live subset</p>
-                <h2>Macro view</h2>
+                <p class="eyebrow" data-i18n="overview.eyebrow">Live subset</p>
+                <h2 data-i18n="overview.title">Macro view</h2>
               </div>
-              <p id="subsetSentence">Computing filtered population.</p>
+              <p id="subsetSentence" data-i18n="overview.computing">Computing filtered population.</p>
             </div>
             <div id="statsGrid" class="stats-grid"></div>
           </section>
@@ -86,15 +90,15 @@
             <div class="cards-pane">
               <div class="pane-title">
                 <div>
-                  <p class="eyebrow">Macro actions</p>
-                  <h2>Cards</h2>
+                  <p class="eyebrow" data-i18n="cards.eyebrow">Macro actions</p>
+                  <h2 data-i18n="cards.title">Cards</h2>
                 </div>
                 <div class="cards-controls">
-                  <div class="segmented card-tabs" aria-label="Card set">
-                    <button id="mainCardsTab" type="button" class="active">Main cards</button>
-                    <button id="moreCardsTab" type="button">More cards</button>
+                  <div class="segmented card-tabs" aria-label="Card set" data-i18n-aria-label="cards.tabAria">
+                    <button id="mainCardsTab" type="button" class="active" data-i18n="cards.mainTab">Main cards</button>
+                    <button id="moreCardsTab" type="button" data-i18n="cards.moreTab">More cards</button>
                   </div>
-                  <select id="themeFilter" aria-label="Card theme"></select>
+                  <select id="themeFilter" aria-label="Card theme" data-i18n-aria-label="cards.themeAria"></select>
                 </div>
               </div>
               <div id="actionCards" class="action-cards"></div>
@@ -108,13 +112,13 @@
           <section class="tester-explorer">
             <div class="pane-title">
               <div>
-                <p class="eyebrow">Drill down</p>
-                <h2>Tester flow</h2>
+                <p class="eyebrow" data-i18n="tester.eyebrow">Drill down</p>
+                <h2 data-i18n="tester.title">Tester flow</h2>
               </div>
               <div class="segmented">
-                <button id="sortImpact" type="button" class="active">Impact</button>
-                <button id="sortActivity" type="button">Activity</button>
-                <button id="sortScore" type="button">Score</button>
+                <button id="sortImpact" type="button" class="active" data-i18n="tester.sortImpact">Impact</button>
+                <button id="sortActivity" type="button" data-i18n="tester.sortActivity">Activity</button>
+                <button id="sortScore" type="button" data-i18n="tester.sortScore">Score</button>
               </div>
             </div>
             <div class="tester-layout">

@@ -119,6 +119,17 @@ input:focus-visible {
   background: var(--surface);
 }
 
+.language-switch {
+  min-height: 34px;
+}
+
+.language-switch button {
+  min-width: 42px;
+  padding: 7px 9px;
+  font-size: 12px;
+  font-weight: 760;
+}
+
 .app-shell {
   display: grid;
   grid-template-columns: 284px minmax(0, 1fr);
@@ -791,6 +802,10 @@ input[type="range"] {
   .topbar__meta span {
     width: 100%;
     overflow-wrap: anywhere;
+  }
+
+  .language-switch {
+    width: 100%;
   }
 
   .app-shell {
