@@ -118,14 +118,22 @@
                 <p class="eyebrow" data-i18n="tester.eyebrow">Drill down</p>
                 <h2 data-i18n="tester.title">Tester flow</h2>
               </div>
-              <div class="segmented">
-                <button id="sortImpact" type="button" class="active" data-i18n="tester.sortImpact">Impact</button>
-                <button id="sortActivity" type="button" data-i18n="tester.sortActivity">Activity</button>
-                <button id="sortScore" type="button" data-i18n="tester.sortScore">Score</button>
-              </div>
             </div>
             <div class="tester-layout">
-              <div id="testerList" class="tester-list"></div>
+              <div class="tester-list-pane">
+                <div class="tester-list-header">
+                  <div class="sort-label">
+                    <span class="sort-icon" aria-hidden="true"></span>
+                    <span data-i18n="tester.sortBy">Sort by</span>
+                  </div>
+                  <div class="segmented tester-sort-control" aria-label="Sort tester list" data-i18n-aria-label="tester.sortAria">
+                    <button id="sortImpact" type="button" class="active" data-i18n="tester.sortImpact">Impact</button>
+                    <button id="sortActivity" type="button" data-i18n="tester.sortActivity">Activity</button>
+                    <button id="sortScore" type="button" data-i18n="tester.sortScore">Score</button>
+                  </div>
+                </div>
+                <div id="testerList" class="tester-list"></div>
+              </div>
               <div id="testerDetail" class="tester-detail"></div>
             </div>
           </section>

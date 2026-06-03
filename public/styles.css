@@ -145,6 +145,7 @@ input:focus-visible {
   align-self: start;
   height: calc(100vh - 78px);
   overflow: auto;
+  min-width: 0;
 }
 
 .filter-header,
@@ -156,22 +157,32 @@ input:focus-visible {
   gap: 16px;
 }
 
+.filter-header {
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
 .filter-header h2,
 .pane-title h2,
 .section-title h2 {
   font-size: 18px;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .filter-header button {
   color: var(--blue);
   background: var(--blue-soft);
   border-color: #c5dce6;
+  max-width: 100%;
+  white-space: normal;
 }
 
 .field {
   display: grid;
   gap: 6px;
   margin-top: 16px;
+  min-width: 0;
 }
 
 .field span,
@@ -179,18 +190,24 @@ input:focus-visible {
   color: var(--muted);
   font-size: 12px;
   font-weight: 680;
+  overflow-wrap: anywhere;
 }
 
 .field input,
 .field select {
   min-height: 38px;
   padding: 8px 10px;
+  min-width: 0;
+  max-width: 100%;
   width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .field-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 10px;
 }
 
@@ -680,7 +697,7 @@ input[type="range"] {
   min-height: 74px;
 }
 
-.mini-card span {
+.mini-card > span {
   display: block;
   color: var(--muted);
   font-size: 11px;
@@ -756,6 +773,77 @@ input[type="range"] {
   display: grid;
   grid-template-columns: minmax(260px, 420px) minmax(0, 1fr);
   gap: 14px;
+}
+
+.tester-list-pane {
+  min-width: 0;
+}
+
+.tester-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.sort-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 720;
+}
+
+.sort-label span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sort-icon {
+  position: relative;
+  flex: 0 0 auto;
+  width: 17px;
+  height: 17px;
+  color: var(--blue);
+}
+
+.sort-icon::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 3px;
+  width: 8px;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 5px 0 currentColor, 0 10px 0 currentColor;
+}
+
+.sort-icon::after {
+  content: "";
+  position: absolute;
+  right: 1px;
+  top: 2px;
+  width: 5px;
+  height: 11px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  transform-origin: center;
+}
+
+.tester-sort-control {
+  flex: 0 1 auto;
+}
+
+.tester-sort-control button {
+  padding: 7px 9px;
+  white-space: nowrap;
 }
 
 .tester-list {
@@ -850,19 +938,28 @@ input[type="range"] {
 
 .metric-label {
   display: inline-flex;
-  align-items: center;
-  gap: 5px;
+  align-items: flex-start;
+  gap: 6px;
   min-width: 0;
   max-width: 100%;
   vertical-align: middle;
+  line-height: 1.28;
+}
+
+.metric-label__text {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .formula-tip {
   flex: 0 0 auto;
-  display: inline-grid;
-  place-items: center;
-  width: 15px;
-  height: 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
   border: 1px solid #b9c5bf;
   border-radius: 50%;
   color: var(--muted);
@@ -871,8 +968,18 @@ input[type="range"] {
   font-weight: 800;
   line-height: 1;
   margin-bottom: 0;
+  margin-top: 1px;
   cursor: help;
-  transform: translateY(-1px);
+  transform: none;
+  text-decoration: none;
+}
+
+.formula-tip::before {
+  content: "i";
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
 }
 
 .formula-tip:hover,
@@ -881,6 +988,214 @@ input[type="range"] {
   border-color: #7d9188;
   background: #eef4f0;
   outline: none;
+}
+
+.flow-chart-card {
+  margin-top: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fcfcfb;
+}
+
+.flow-chart-card__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+
+.flow-chart-card h4 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.flow-chart-card p {
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.flow-chart-card__scale {
+  display: grid;
+  justify-items: end;
+  align-content: space-between;
+  min-width: 72px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 680;
+}
+
+.flow-chart-scroll {
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.flow-chart {
+  display: block;
+  width: 100%;
+  min-width: 660px;
+  height: auto;
+}
+
+.flow-axis {
+  stroke: #cfd8d3;
+  stroke-width: 1;
+}
+
+.flow-axis-label {
+  fill: var(--muted);
+  font-size: 11px;
+  font-weight: 620;
+}
+
+.flow-axis-label--end {
+  text-anchor: end;
+}
+
+.flow-chart__bar {
+  fill: #8fb19d;
+  opacity: 0.82;
+}
+
+.flow-chart__bar:hover {
+  opacity: 1;
+}
+
+.flow-chart__bar.is-peak {
+  fill: var(--amber);
+  opacity: 0.96;
+}
+
+.flow-marker {
+  stroke-width: 1.5;
+  stroke-dasharray: 3 3;
+  opacity: 0.68;
+}
+
+.flow-marker-dot {
+  stroke: #fff;
+  stroke-width: 1.5;
+}
+
+.flow-marker--start,
+.flow-marker-dot--start {
+  stroke: var(--blue);
+  fill: var(--blue);
+}
+
+.flow-marker--guidance,
+.flow-marker-dot--guidance {
+  stroke: var(--violet);
+  fill: var(--violet);
+}
+
+.flow-marker--success,
+.flow-marker-dot--success {
+  stroke: var(--green);
+  fill: var(--green);
+}
+
+.flow-marker--warning,
+.flow-marker-dot--warning,
+.flow-marker--peak,
+.flow-marker-dot--peak {
+  stroke: var(--amber);
+  fill: var(--amber);
+}
+
+.flow-marker--results,
+.flow-marker-dot--results {
+  stroke: var(--blue);
+  fill: var(--blue);
+}
+
+.flow-marker--questionnaire,
+.flow-marker-dot--questionnaire {
+  stroke: var(--violet);
+  fill: var(--violet);
+}
+
+.flow-marker--technical,
+.flow-marker-dot--technical {
+  stroke: var(--red);
+  fill: var(--red);
+}
+
+.flow-highlights {
+  display: grid;
+  gap: 7px;
+  margin-top: 8px;
+}
+
+.flow-highlights > span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 720;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.flow-highlights > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.flow-highlight {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  padding: 4px 6px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.flow-highlight > span {
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--blue);
+}
+
+.flow-highlight strong,
+.flow-highlight small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.flow-highlight small {
+  color: var(--muted);
+}
+
+.flow-highlight--guidance > span,
+.flow-highlight--questionnaire > span {
+  background: var(--violet);
+}
+
+.flow-highlight--success > span {
+  background: var(--green);
+}
+
+.flow-highlight--warning > span,
+.flow-highlight--peak > span {
+  background: var(--amber);
+}
+
+.flow-highlight--technical > span {
+  background: var(--red);
 }
 
 .timeline {

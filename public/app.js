@@ -117,12 +117,28 @@ const UI = {
     "tester.select": "Select a tester to inspect their flow.",
     "tester.header": "Tester",
     "tester.coherenceFlag": "coherence flag",
+    "tester.sortBy": "Sort list by",
+    "tester.sortAria": "Sort tester list",
     "section.screening": "Screening",
     "section.usage": "Usage metrics",
     "section.endQuestionnaire": "End questionnaire",
     "section.j7": "J+7",
     "section.comments": "Comments and coherence",
     "section.flow": "Playtest flow ({count} events)",
+    "section.flowChartTitle": "Event density over time",
+    "section.flowChartSubtitle": "{buckets} time buckets · {duration} span · peak {peak} events",
+    "section.flowChartFormula": "Graph formula: valid timestamped events are sorted by time. The interval from first to last event is divided into equal-width time buckets; each bar counts events whose timestamp falls in that bucket. The highlighted peak is the bucket with the highest event count. Marker positions use (event timestamp - first timestamp) / total observed duration.",
+    "section.flowChartNoTime": "No timestamped event can be charted.",
+    "section.flowChartKeyEvents": "Highlighted analysis points",
+    "chart.events": "{count} events",
+    "chart.event": "{count} event",
+    "chart.peak": "Peak",
+    "chart.start": "Start",
+    "chart.end": "End",
+    "chart.durationDays": "{count}d",
+    "chart.durationHours": "{count}h",
+    "chart.durationMinutes": "{count}m",
+    "chart.durationSeconds": "{count}s",
     "section.noQualitative": "No qualitative line attached to this tester.",
     "section.noTimeline": "No timeline available.",
     "kv.age": "Age",
@@ -257,12 +273,28 @@ const UI = {
     "tester.select": "Sélectionnez un testeur pour inspecter son parcours.",
     "tester.header": "Testeur",
     "tester.coherenceFlag": "signal de cohérence",
+    "tester.sortBy": "Trier la liste par",
+    "tester.sortAria": "Trier la liste des testeurs",
     "section.screening": "Screening",
     "section.usage": "Métriques d'usage",
     "section.endQuestionnaire": "Questionnaire de fin",
     "section.j7": "J+7",
     "section.comments": "Commentaires et cohérence",
     "section.flow": "Parcours de playtest ({count} événements)",
+    "section.flowChartTitle": "Densité d'événements dans le temps",
+    "section.flowChartSubtitle": "{buckets} tranches temporelles · durée {duration} · pic {peak} événements",
+    "section.flowChartFormula": "Formule du graphique : les événements avec timestamp valide sont triés par temps. L'intervalle entre premier et dernier événement est divisé en tranches temporelles de largeur égale ; chaque barre compte les événements dont le timestamp tombe dans cette tranche. Le pic mis en avant est la tranche avec le plus grand nombre d'événements. La position des marqueurs utilise (timestamp de l'événement - premier timestamp) / durée totale observée.",
+    "section.flowChartNoTime": "Aucun événement horodaté ne peut être représenté.",
+    "section.flowChartKeyEvents": "Points d'analyse mis en avant",
+    "chart.events": "{count} événements",
+    "chart.event": "{count} événement",
+    "chart.peak": "Pic",
+    "chart.start": "Début",
+    "chart.end": "Fin",
+    "chart.durationDays": "{count}j",
+    "chart.durationHours": "{count}h",
+    "chart.durationMinutes": "{count}min",
+    "chart.durationSeconds": "{count}s",
     "section.noQualitative": "Aucune ligne qualitative rattachée à ce testeur.",
     "section.noTimeline": "Aucune timeline disponible.",
     "kv.age": "Âge",
@@ -1284,14 +1316,14 @@ function termDefinition(key) {
 function formulaTip(formula) {
   if (!formula) return "";
   const label = state.lang === "fr" ? "Formule" : "Formula";
-  return `<span class="formula-tip" tabindex="0" aria-label="${esc(`${label}: ${formula}`)}" ${tooltipAttrs(formula)}>i</span>`;
+  return `<span class="formula-tip" tabindex="0" aria-label="${esc(`${label}: ${formula}`)}" ${tooltipAttrs(formula)}></span>`;
 }
 
 function metricLabel(label, formula) {
   const labelHtml = /coherence|cohérence/i.test(label)
     ? `<span class="defined-term" ${tooltipAttrs(termDefinition("coherenceFlag"))}>${esc(label)}</span>`
     : esc(label);
-  return `<span class="metric-label">${labelHtml}${formulaTip(formula)}</span>`;
+  return `<span class="metric-label"><span class="metric-label__text">${labelHtml}</span>${formulaTip(formula)}</span>`;
 }
 
 function fmtNumber(value, suffix = "") {
@@ -2262,6 +2294,258 @@ function kv(label, value, formula = "") {
   return `<div class="kv"><span>${formula ? metricLabel(label, formula) : esc(label)}</span><span>${valueHtml(displayValue)}</span></div>`;
 }
 
+function parseTimelineTimestamp(timestamp) {
+  const raw = String(timestamp || "").trim();
+  if (!raw) return null;
+  const normalized = raw.includes("T") ? raw : raw.replace(" ", "T");
+  const time = new Date(normalized).getTime();
+  return Number.isFinite(time) ? time : null;
+}
+
+function formatChartDateTime(time) {
+  return new Intl.DateTimeFormat(locale(), {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  }).format(new Date(time));
+}
+
+function formatChartTick(time) {
+  return new Intl.DateTimeFormat(locale(), {
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(new Date(time));
+}
+
+function formatEventCount(count) {
+  return t(count === 1 ? "chart.event" : "chart.events", { count: fmtNumber(count) });
+}
+
+function formatFlowDuration(ms) {
+  const seconds = Math.max(1, ms / 1000);
+  if (seconds >= 172800) return t("chart.durationDays", { count: fmtNumber(seconds / 86400) });
+  if (seconds >= 7200) return t("chart.durationHours", { count: fmtNumber(seconds / 3600) });
+  if (seconds >= 120) return t("chart.durationMinutes", { count: fmtNumber(seconds / 60) });
+  return t("chart.durationSeconds", { count: fmtNumber(seconds) });
+}
+
+function eventDetails(event) {
+  return [event.platform, event.version, event.details].filter(Boolean).join(" · ");
+}
+
+function flowHighlightCopy(key) {
+  const copy = {
+    en: {
+      start: ["Start", "First app/playtest-start event. Useful as the zero point of the reconstructed journey."],
+      gate: ["Alpha access", "Alpha gate or email registration event. Useful to separate access friction from later gameplay friction."],
+      onboarding: ["Onboarding", "Tutorial completion. Useful to compare post-onboarding behavior with reported progression clarity."],
+      firstAction: ["First action", "First post-onboarding action. Useful to estimate whether the player understood what to do next."],
+      firstRecipe: ["First recipe", "First successful recipe/merge. Useful to compare affordance and recipe-memory complaints with actual progression."],
+      mergeBlocked: ["Merge blocked", "First cancelled merge. Useful to detect fusion/grid friction in the measured flow."],
+      ritual: ["Ritual", "First ritual completion. Useful to identify whether the loop became repeatable or ritualized."],
+      observatory: ["Observatory", "First observatory entry. Useful to see whether results/personality value was actually explored."],
+      journal: ["Journal", "First journal opening. Useful to distinguish observatory visits from result consultation."],
+      questionnaire: ["Questionnaire", "First in-game questionnaire signal. Useful to locate questioning friction in the activity curve."],
+      endQuestionnaire: ["End questionnaire", "In-game/end questionnaire completion or answer. Useful to connect immediate feedback with prior play behavior."],
+      j7: ["J+7", "Post-alpha J+7 submission. Useful to connect delayed feedback with the full measured path."],
+      technical: ["Technical signal", "Runtime error or heavy loading signal. Useful to compare reported technical issues with logged failures."],
+      peak: ["Peak", "Highest event-count bucket. Useful to identify the densest activity moment in the reconstructed flow."]
+    },
+    fr: {
+      start: ["Début", "Premier événement de lancement app/playtest. Sert de point zéro du parcours reconstitué."],
+      gate: ["Accès alpha", "Événement de gate alpha ou d'enregistrement email. Utile pour séparer la friction d'accès de la friction de jeu."],
+      onboarding: ["Onboarding", "Complétion du tutoriel. Utile pour comparer le comportement post-onboarding avec la clarté de progression déclarée."],
+      firstAction: ["Première action", "Première action après onboarding. Utile pour estimer si le joueur a compris quoi faire ensuite."],
+      firstRecipe: ["Première recette", "Première recette/fusion réussie. Utile pour confronter affordance et mémoire des recettes à la progression réelle."],
+      mergeBlocked: ["Fusion bloquée", "Première fusion annulée. Utile pour détecter une friction fusion/grille dans le parcours mesuré."],
+      ritual: ["Rituel", "Première complétion de rituel. Utile pour identifier si la boucle devient répétable ou ritualisée."],
+      observatory: ["Observatoire", "Première entrée dans l'observatoire. Utile pour voir si la valeur résultats/personnalité a réellement été explorée."],
+      journal: ["Carnet", "Première ouverture du carnet. Utile pour distinguer visite de l'observatoire et consultation des résultats."],
+      questionnaire: ["Questionnaire", "Premier signal de questionnaire in-game. Utile pour localiser la friction de questionnement dans la courbe d'activité."],
+      endQuestionnaire: ["Questionnaire fin", "Complétion ou réponse au questionnaire in-game/de fin. Utile pour relier le feedback immédiat au parcours précédent."],
+      j7: ["J+7", "Soumission du questionnaire J+7 post-alpha. Utile pour relier le feedback différé au parcours complet mesuré."],
+      technical: ["Signal technique", "Erreur runtime ou signal de chargement lourd. Utile pour comparer les problèmes techniques déclarés aux échecs loggés."],
+      peak: ["Pic", "Tranche avec le plus grand nombre d'événements. Utile pour identifier le moment le plus dense du parcours reconstitué."]
+    }
+  };
+  return copy[state.lang]?.[key] || copy.en[key] || [key, ""];
+}
+
+function loadDurationMs(event) {
+  const match = String(event.details || "").match(/duration_ms=(\d+(?:\.\d+)?)/);
+  return match ? Number(match[1]) : null;
+}
+
+function flowHighlightRules() {
+  return [
+    { key: "start", className: "start", match: (event) => ["gameStarted", "newPlayer", "first_event"].includes(event.event) },
+    { key: "gate", className: "start", match: (event) => ["alpha_gate_completed", "playtest_email_registered"].includes(event.event) },
+    { key: "onboarding", className: "guidance", match: (event) => event.event === "tutorial_completed" },
+    { key: "firstAction", className: "guidance", match: (event) => event.event === "first_post_onboarding_action" },
+    { key: "firstRecipe", className: "success", match: (event) => event.event === "first_tile_merge" || (event.event === "tile_merge" && /first_time=1/.test(String(event.details || ""))) },
+    { key: "mergeBlocked", className: "warning", match: (event) => event.event === "merge_cancelled" },
+    { key: "ritual", className: "success", match: (event) => ["first_ritual_completed", "ritual_completed"].includes(event.event) },
+    { key: "observatory", className: "results", match: (event) => ["first_observatory_entered", "observatory_entered"].includes(event.event) },
+    { key: "journal", className: "results", match: (event) => ["first_journal_opened", "journal_opened"].includes(event.event) },
+    { key: "questionnaire", className: "questionnaire", match: (event) => ["question_shown", "questionnaire_completed", "questionnaire_summary"].includes(event.event) },
+    { key: "endQuestionnaire", className: "questionnaire", match: (event) => ["end_questionnaire_completed", "end_questionnaire_answer", "end_questionnaire_comment"].includes(event.event) },
+    { key: "j7", className: "questionnaire", match: (event) => event.event === "j7_submitted" },
+    { key: "technical", className: "technical", match: (event) => event.event === "runtime_error" || (event.event === "load_time_ms" && (loadDurationMs(event) || 0) >= 3000) }
+  ];
+}
+
+function buildFlowMarkers(events, start, span, peakBucket) {
+  const seenIndexes = new Set();
+  const markers = [];
+  flowHighlightRules().forEach((rule) => {
+    const event = events.find((item) => !seenIndexes.has(item.index) && rule.match(item));
+    if (!event) return;
+    seenIndexes.add(event.index);
+    const [label, reason] = flowHighlightCopy(rule.key);
+    markers.push({
+      key: rule.key,
+      className: rule.className,
+      label,
+      reason,
+      time: event.time,
+      event
+    });
+  });
+  if (peakBucket) {
+    const [label, reason] = flowHighlightCopy("peak");
+    markers.push({
+      key: "peak",
+      className: "peak",
+      label,
+      reason,
+      time: start + (peakBucket.index + 0.5) * (span / peakBucket.totalBuckets),
+      count: peakBucket.count,
+      windowStart: peakBucket.start,
+      windowEnd: peakBucket.end
+    });
+  }
+  return markers.sort((a, b) => a.time - b.time).map((marker, index) => ({ ...marker, lane: index % 3 }));
+}
+
+function renderFlowChart(timeline) {
+  const events = timeline
+    .map((event, index) => ({ ...event, index, time: parseTimelineTimestamp(event.timestamp) }))
+    .filter((event) => event.time !== null)
+    .sort((a, b) => a.time - b.time || a.index - b.index);
+  if (!events.length) return `<div class="empty-state">${esc(t("section.flowChartNoTime"))}</div>`;
+
+  const start = events[0].time;
+  const end = events[events.length - 1].time;
+  const span = Math.max(end - start, 1);
+  const bucketCount = Math.min(42, Math.max(8, Math.ceil(Math.sqrt(events.length) * 2.2)));
+  const bucketSize = span / bucketCount;
+  const buckets = Array.from({ length: bucketCount }, (_, index) => ({
+    index,
+    count: 0,
+    start: start + index * bucketSize,
+    end: index === bucketCount - 1 ? end : start + (index + 1) * bucketSize
+  }));
+  events.forEach((event) => {
+    const bucketIndex = Math.min(bucketCount - 1, Math.floor(((event.time - start) / span) * bucketCount));
+    buckets[bucketIndex].count += 1;
+  });
+  const maxCount = Math.max(...buckets.map((bucket) => bucket.count), 1);
+  const peakBucket = buckets.reduce((best, bucket) => bucket.count > best.count ? bucket : best, buckets[0]);
+  const peakMeta = { ...peakBucket, totalBuckets: bucketCount };
+  const markers = buildFlowMarkers(events, start, span, peakMeta);
+
+  const width = 760;
+  const height = 210;
+  const margin = { top: 24, right: 16, bottom: 42, left: 42 };
+  const chartWidth = width - margin.left - margin.right;
+  const chartHeight = height - margin.top - margin.bottom;
+  const slotWidth = chartWidth / bucketCount;
+  const barGap = Math.min(3, Math.max(1, slotWidth * 0.18));
+  const barWidth = Math.max(1, slotWidth - barGap);
+  const px = (value) => Number(value.toFixed(2));
+  const xForTime = (time) => margin.left + Math.max(0, Math.min(1, (time - start) / span)) * chartWidth;
+  const chartFormula = t("section.flowChartFormula");
+  const bars = buckets.map((bucket) => {
+    const barHeight = (bucket.count / maxCount) * chartHeight;
+    const x = margin.left + bucket.index * slotWidth + barGap / 2;
+    const y = margin.top + chartHeight - barHeight;
+    const tooltip = lineJoin([
+      formatEventCount(bucket.count),
+      `${formatChartDateTime(bucket.start)} -> ${formatChartDateTime(bucket.end)}`
+    ]);
+    return `<rect class="flow-chart__bar ${bucket.index === peakBucket.index ? "is-peak" : ""}" x="${px(x)}" y="${px(y)}" width="${px(barWidth)}" height="${px(barHeight)}" rx="2" ${tooltipAttrs(tooltip)}></rect>`;
+  }).join("");
+  const markerSvg = markers.map((marker) => {
+    const x = px(xForTime(marker.time));
+    const dotY = margin.top + 10 + marker.lane * 14;
+    const eventName = marker.event?.event || t("chart.peak");
+    const detail = marker.event ? eventDetails(marker.event) : `${formatEventCount(marker.count)} · ${formatChartDateTime(marker.windowStart)} -> ${formatChartDateTime(marker.windowEnd)}`;
+    const tooltip = lineJoin([
+      `${marker.label}: ${eventName}`,
+      formatChartDateTime(marker.time),
+      marker.reason,
+      detail
+    ]);
+    return `
+      <line class="flow-marker flow-marker--${esc(marker.className)}" x1="${x}" y1="${margin.top}" x2="${x}" y2="${margin.top + chartHeight}" ${tooltipAttrs(tooltip)}></line>
+      <circle class="flow-marker-dot flow-marker-dot--${esc(marker.className)}" cx="${x}" cy="${px(dotY)}" r="4.5" ${tooltipAttrs(tooltip)}></circle>
+    `;
+  }).join("");
+  const highlightList = markers.map((marker) => {
+    const eventName = marker.event?.event || t("chart.peak");
+    const detail = marker.event ? eventDetails(marker.event) : `${formatEventCount(marker.count)} · ${formatChartDateTime(marker.windowStart)} -> ${formatChartDateTime(marker.windowEnd)}`;
+    const tooltip = lineJoin([
+      `${marker.label}: ${eventName}`,
+      formatChartDateTime(marker.time),
+      marker.reason,
+      detail
+    ]);
+    return `
+      <span class="flow-highlight flow-highlight--${esc(marker.className)}" ${tooltipAttrs(tooltip)}>
+        <span aria-hidden="true"></span>
+        <strong>${esc(marker.label)}</strong>
+        <small>${esc(formatChartTick(marker.time))}</small>
+      </span>
+    `;
+  }).join("");
+
+  return `
+    <div class="flow-chart-card">
+      <div class="flow-chart-card__header">
+        <div>
+          <h4>${esc(t("section.flowChartTitle"))}${formulaTip(chartFormula)}</h4>
+          <p>${esc(t("section.flowChartSubtitle", { buckets: bucketCount, duration: formatFlowDuration(span), peak: maxCount }))}</p>
+        </div>
+        <div class="flow-chart-card__scale">
+          <span>${esc(formatEventCount(maxCount))}</span>
+          <span>0</span>
+        </div>
+      </div>
+      <div class="flow-chart-scroll">
+        <svg class="flow-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(t("section.flowChartTitle"))}">
+          <line class="flow-axis" x1="${margin.left}" y1="${margin.top + chartHeight}" x2="${margin.left + chartWidth}" y2="${margin.top + chartHeight}"></line>
+          <line class="flow-axis" x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${margin.top + chartHeight}"></line>
+          <text class="flow-axis-label" x="${margin.left}" y="${height - 14}">${esc(t("chart.start"))}: ${esc(formatChartTick(start))}</text>
+          <text class="flow-axis-label flow-axis-label--end" x="${margin.left + chartWidth}" y="${height - 14}">${esc(t("chart.end"))}: ${esc(formatChartTick(end))}</text>
+          <text class="flow-axis-label" x="8" y="${margin.top + 4}">${esc(fmtNumber(maxCount))}</text>
+          <text class="flow-axis-label" x="18" y="${margin.top + chartHeight + 4}">0</text>
+          ${bars}
+          ${markerSvg}
+        </svg>
+      </div>
+      <div class="flow-highlights">
+        <span>${esc(t("section.flowChartKeyEvents"))}</span>
+        <div>${highlightList}</div>
+      </div>
+    </div>
+  `;
+}
+
 function renderTesterDetail() {
   const user = state.filteredUsers.find((item) => item.id === state.selectedUserId);
   if (!user) {
@@ -2355,6 +2639,7 @@ function renderTesterDetail() {
 
     <section>
       <h3>${esc(t("section.flow", { count: timeline.length }))}</h3>
+      ${timeline.length ? renderFlowChart(timeline) : ""}
       <div class="timeline">
         ${timeline.length ? timeline.map((event) => `
           <div class="timeline-item">
