@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Kaleotopia Alpha Analytics Visualizer</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <div id="app">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Kaleotopia Alpha</p>
+          <h1>Analytics Visualizer</h1>
+        </div>
+        <div class="topbar__meta">
+          <span id="generatedAt">Loading data</span>
+          <span>Local tester ids only</span>
+        </div>
+      </header>
+
+      <div class="app-shell">
+        <aside class="filters" aria-label="Dynamic filters">
+          <div class="filter-header">
+            <h2>Filter testers</h2>
+            <button id="resetFilters" type="button">Reset</button>
+          </div>
+
+          <label class="field">
+            <span>Search tester</span>
+            <input id="searchInput" type="search" placeholder="KT-001, version, platform">
+          </label>
+
+          <div class="field-grid">
+            <label class="field">
+              <span>Age</span>
+              <select id="ageFilter"></select>
+            </label>
+            <label class="field">
+              <span>Platform</span>
+              <select id="platformFilter"></select>
+            </label>
+          </div>
+
+          <label class="field">
+            <span>Wellbeing apps</span>
+            <select id="wellnessFilter"></select>
+          </label>
+
+          <label class="field">
+            <span>J+7 download intent</span>
+            <select id="downloadFilter"></select>
+          </label>
+
+          <div class="range-block">
+            <div class="range-block__label">
+              <span>Active days</span>
+              <strong id="activeDaysLabel">0 - max</strong>
+            </div>
+            <input id="activeDaysMin" type="range" min="0" max="30" value="0">
+          </div>
+
+          <div class="toggle-list">
+            <label><input id="screeningOnly" type="checkbox"> Has screening</label>
+            <label><input id="endOnly" type="checkbox"> Has end questionnaire</label>
+            <label><input id="j7Only" type="checkbox"> Has J+7</label>
+            <label><input id="allQuestionnairesOnly" type="checkbox"> Full questionnaire chain</label>
+            <label><input id="flagsOnly" type="checkbox"> Coherence flags only</label>
+            <label><input id="progressionOnly" type="checkbox"> Progression block signal</label>
+          </div>
+        </aside>
+
+        <main class="dashboard">
+          <section class="overview">
+            <div class="section-title">
+              <div>
+                <p class="eyebrow">Live subset</p>
+                <h2>Macro view</h2>
+              </div>
+              <p id="subsetSentence">Computing filtered population.</p>
+            </div>
+            <div id="statsGrid" class="stats-grid"></div>
+          </section>
+
+          <section class="workbench">
+            <div class="cards-pane">
+              <div class="pane-title">
+                <div>
+                  <p class="eyebrow">Macro actions</p>
+                  <h2>Cards</h2>
+                </div>
+                <div class="cards-controls">
+                  <div class="segmented card-tabs" aria-label="Card set">
+                    <button id="mainCardsTab" type="button" class="active">Main cards</button>
+                    <button id="moreCardsTab" type="button">More cards</button>
+                  </div>
+                  <select id="themeFilter" aria-label="Card theme"></select>
+                </div>
+              </div>
+              <div id="actionCards" class="action-cards"></div>
+            </div>
+
+            <div class="detail-pane">
+              <div id="actionDetail"></div>
+            </div>
+          </section>
+
+          <section class="tester-explorer">
+            <div class="pane-title">
+              <div>
+                <p class="eyebrow">Drill down</p>
+                <h2>Tester flow</h2>
+              </div>
+              <div class="segmented">
+                <button id="sortImpact" type="button" class="active">Impact</button>
+                <button id="sortActivity" type="button">Activity</button>
+                <button id="sortScore" type="button">Score</button>
+              </div>
+            </div>
+            <div class="tester-layout">
+              <div id="testerList" class="tester-list"></div>
+              <div id="testerDetail" class="tester-detail"></div>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>
