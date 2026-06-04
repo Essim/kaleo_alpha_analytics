@@ -8,6 +8,7 @@ const els = {
   wellnessFilter: document.querySelector("#wellnessFilter"),
   downloadFilter: document.querySelector("#downloadFilter"),
   activeDaysMin: document.querySelector("#activeDaysMin"),
+  activeDaysMetricLabel: document.querySelector("#activeDaysMetricLabel"),
   activeDaysLabel: document.querySelector("#activeDaysLabel"),
   screeningOnly: document.querySelector("#screeningOnly"),
   endOnly: document.querySelector("#endOnly"),
@@ -963,7 +964,7 @@ const CARD_COPY = {
     "MC-W03": {
       title: "La fusion des tuiles manque d'affordance, de mémoire de recettes et de gestion de grille",
       mainEvidence: "La friction fusion/grille apparaît dans les blocages J+7, le gameplay moins apprécié, les commentaires, les bug reports et les métriques de fusion.",
-      nextAction: "Ajouter le support codex, le recyclage, le rituel d'inversion, la mémoire de recettes et la prévention des impasses de grille.",
+      nextAction: "Ajouter le support codex, le recyclage, inverser les rituels, prévenir les softlocks (tutoriel).",
       evidence: [
         "Blocage explicite de fusion : 6/43 répondants J+7, soit 14,0 %, disent avoir été bloqués parce qu'ils ne comprenaient pas comment fusionner les tuiles.",
         "Expérience de jeu critiquée : 13/43, soit 30,2 %, citent le gameplay (rituels, fusions, aménagement) parmi les aspects les moins appréciés.",
@@ -1696,10 +1697,12 @@ function renderChrome() {
   els.sortActivity.removeAttribute("title");
   els.sortScore.removeAttribute("title");
   els.activeDaysMin.removeAttribute("title");
+  els.activeDaysMin.removeAttribute("data-tooltip");
+  els.activeDaysMetricLabel.removeAttribute("title");
   els.sortImpact.setAttribute("data-tooltip", sortFormula("impact"));
   els.sortActivity.setAttribute("data-tooltip", sortFormula("activity"));
   els.sortScore.setAttribute("data-tooltip", sortFormula("score"));
-  els.activeDaysMin.setAttribute("data-tooltip", sourceMetricFormula("activeDays"));
+  els.activeDaysMetricLabel.setAttribute("data-tooltip", sourceMetricFormula("activeDays"));
   const switchLabel = state.cardViewMode === "simple" ? t("cards.switchToDetailed") : t("cards.switchToSimple");
   els.cardViewModeToggle.removeAttribute("title");
   els.cardViewModeToggle.setAttribute("data-tooltip", switchLabel);
@@ -2517,10 +2520,22 @@ function contextBreakdownRows(card, users, dimension) {
       if (userMatchesTheme(user, card.theme)) group.affected += 1;
     });
   });
-  return [...groups.values()]
+  const rows = [...groups.values()]
     .filter((row) => row.total > 0)
-    .map((row) => ({ ...row, rate: percent(row.affected, row.total) || 0 }))
-    .sort((a, b) => b.rate - a.rate || b.affected - a.affected || a.label.localeCompare(b.label));
+    .map((row) => ({ ...row, rate: percent(row.affected, row.total) || 0 }));
+  if (dimension === "age") {
+    return rows.sort((a, b) => ageSortValue(a.label) - ageSortValue(b.label) || a.label.localeCompare(b.label));
+  }
+  return rows.sort((a, b) => b.rate - a.rate || b.affected - a.affected || a.label.localeCompare(b.label));
+}
+
+function ageSortValue(label) {
+  const text = String(label || "").toLowerCase();
+  if (text.includes("moins")) return -1;
+  const number = text.match(/\d+/);
+  if (number) return Number(number[0]);
+  if (text.includes("+") || text.includes("plus")) return Number.POSITIVE_INFINITY;
+  return Number.POSITIVE_INFINITY;
 }
 
 function contextBarList(rows) {
@@ -2585,8 +2600,11 @@ function renderActionDetail() {
         <span class="pill">${esc(card.status)}</span>
         </div>
         <h2>${esc(card.title)}</h2>
-        <p>${textWithPercentHovers(card.mainEvidence)}</p>
-        <p><strong>${esc(cardActionLabel(card))}:</strong> ${textWithPercentHovers(card.nextAction)}</p>
+        <div class="detail-action detail-action--${esc(card.kind || "default")}">
+          <span>${esc(cardActionLabel(card))}</span>
+          <p>${textWithPercentHovers(card.nextAction)}</p>
+        </div>
+        <p class="detail-main-evidence">${textWithPercentHovers(card.mainEvidence)}</p>
       </div>
       <div class="detail-body">
         <section class="detail-section">

@@ -837,6 +837,47 @@ input[type="range"] {
   line-height: 1.5;
 }
 
+.detail-action {
+  display: grid;
+  gap: 6px;
+  padding: 13px 14px;
+  border: 1px solid var(--line);
+  border-left: 5px solid var(--blue);
+  border-radius: var(--radius);
+  background: var(--blue-soft);
+}
+
+.detail-action--strength {
+  background: var(--green-soft);
+  border-color: rgba(65, 123, 90, 0.3);
+  border-left-color: var(--green);
+}
+
+.detail-action--weakness {
+  background: var(--yellow-soft);
+  border-color: rgba(180, 149, 35, 0.36);
+  border-left-color: var(--yellow);
+}
+
+.detail-action span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 780;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.detail-action p {
+  color: var(--ink);
+  font-size: 17px;
+  font-weight: 760;
+  line-height: 1.35;
+}
+
+.detail-main-evidence {
+  padding-top: 2px;
+}
+
 .detail-body {
   display: grid;
   gap: 16px;
