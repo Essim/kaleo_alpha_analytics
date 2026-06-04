@@ -248,6 +248,41 @@ input[type="range"] {
   min-width: 0;
 }
 
+body.cards-fullscreen-mode {
+  overflow: hidden;
+}
+
+body.cards-fullscreen-mode .topbar {
+  display: none;
+}
+
+body.cards-fullscreen-mode .app-shell {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  grid-template-columns: 300px minmax(0, 1fr);
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+body.cards-fullscreen-mode .filters {
+  position: static;
+  top: 0;
+  height: 100vh;
+}
+
+body.cards-fullscreen-mode .dashboard {
+  height: 100vh;
+  padding: 18px 20px 20px;
+  overflow: hidden;
+}
+
+body.cards-fullscreen-mode .overview,
+body.cards-fullscreen-mode .tester-explorer,
+body.cards-fullscreen-mode .detail-pane {
+  display: none;
+}
+
 .overview,
 .workbench,
 .tester-explorer {
@@ -315,6 +350,20 @@ input[type="range"] {
 
 .workbench.is-detail-closed {
   grid-template-columns: 1fr;
+}
+
+body.cards-fullscreen-mode .workbench {
+  grid-template-columns: 1fr;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+body.cards-fullscreen-mode .cards-pane {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
 }
 
 .cards-pane,
@@ -405,6 +454,54 @@ input[type="range"] {
   display: none;
 }
 
+.cards-fullscreen-toggle {
+  color: var(--muted);
+  background: var(--surface);
+}
+
+.cards-fullscreen-toggle:hover,
+.cards-fullscreen-toggle.is-fullscreen {
+  color: var(--blue);
+  background: var(--blue-soft);
+}
+
+.cards-fullscreen-toggle__icon {
+  position: relative;
+  display: block;
+  width: 18px;
+  height: 18px;
+}
+
+.cards-fullscreen-toggle__icon::before,
+.cards-fullscreen-toggle__icon::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  background:
+    linear-gradient(currentColor, currentColor) left top / 7px 2px no-repeat,
+    linear-gradient(currentColor, currentColor) left top / 2px 7px no-repeat,
+    linear-gradient(currentColor, currentColor) right top / 7px 2px no-repeat,
+    linear-gradient(currentColor, currentColor) right top / 2px 7px no-repeat,
+    linear-gradient(currentColor, currentColor) left bottom / 7px 2px no-repeat,
+    linear-gradient(currentColor, currentColor) left bottom / 2px 7px no-repeat,
+    linear-gradient(currentColor, currentColor) right bottom / 7px 2px no-repeat,
+    linear-gradient(currentColor, currentColor) right bottom / 2px 7px no-repeat;
+}
+
+.cards-fullscreen-toggle__icon::after {
+  display: none;
+  inset: 4px;
+}
+
+.cards-fullscreen-toggle.is-fullscreen .cards-fullscreen-toggle__icon::before {
+  inset: 4px;
+}
+
+.cards-fullscreen-toggle.is-fullscreen .cards-fullscreen-toggle__icon::after {
+  display: block;
+  inset: 1px;
+}
+
 .action-cards {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -424,6 +521,19 @@ input[type="range"] {
 
 .workbench.is-detail-closed .action-cards.is-simple-mode {
   max-height: none;
+}
+
+body.cards-fullscreen-mode .action-cards {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  height: 100%;
+  max-height: none;
+  min-height: 0;
+  overflow: auto;
+  padding: 4px 8px 24px 0;
+}
+
+body.cards-fullscreen-mode .action-cards:not(.is-simple-mode) {
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
 }
 
 .action-card {
@@ -1335,6 +1445,25 @@ input[type="range"] {
 
   .app-shell {
     grid-template-columns: 1fr;
+  }
+
+  body.cards-fullscreen-mode {
+    overflow: auto;
+  }
+
+  body.cards-fullscreen-mode .app-shell {
+    position: static;
+    grid-template-columns: 1fr;
+    min-height: 100vh;
+  }
+
+  body.cards-fullscreen-mode .filters,
+  body.cards-fullscreen-mode .dashboard {
+    height: auto;
+  }
+
+  body.cards-fullscreen-mode .dashboard {
+    overflow: visible;
   }
 
   .filters {

@@ -2,6 +2,7 @@ require "csv"
 require "json"
 require "digest"
 require "fileutils"
+require "set"
 
 PROJECT_ROOT = File.expand_path("..", __dir__)
 SOURCE_ROOT = File.expand_path("..", PROJECT_ROOT)
@@ -139,8 +140,28 @@ local_id_by_key = {}
 all_keys = (all_flow.map { |r| norm_key(r["user_key_norm"] || r["user_key"]) } |
             screening_rows.map { |r| norm_key(r["user_key_norm"] || r["user_key"]) } |
             j7_rows.map { |r| norm_key(r["user_key_norm"] || r["matched_user_key_norm"] || r["email_norm"]) }).reject(&:empty?).sort
-all_keys.each_with_index do |key, index|
-  local_id_by_key[key] = "KT-#{(index + 1).to_s.rjust(3, "0")}"
+existing_id_by_key = {}
+if File.exist?(MAP_FILE)
+  CSV.foreach(MAP_FILE, headers: true) do |row|
+    key = norm_key(row["original_user_id"])
+    local_id = row["local_user_id"].to_s.strip
+    next if key.empty? || local_id.empty?
+    existing_id_by_key[key] = local_id
+  end
+end
+used_ids = existing_id_by_key.values.to_set
+max_id_number = used_ids.map { |local_id| local_id[/\AKT-(\d+)\z/, 1].to_i }.max || 0
+all_keys.each do |key|
+  if existing_id_by_key[key]
+    local_id_by_key[key] = existing_id_by_key[key]
+    next
+  end
+  begin
+    max_id_number += 1
+    candidate = "KT-#{max_id_number.to_s.rjust(3, "0")}"
+  end while used_ids.include?(candidate)
+  used_ids << candidate
+  local_id_by_key[key] = candidate
 end
 
 CSV.open(MAP_FILE, "w") do |csv|
@@ -392,12 +413,12 @@ main_cards = [
     "theme" => "visual",
     "status" => "Strength",
     "severity" => 2,
-    "mainEvidence" => "20/43 J+7 respondents, 46.5%, cited graphic rendering among the most appreciated aspects.",
+    "mainEvidence" => "28/55 J+7 respondents, 50.9%, cited graphic rendering among the most appreciated aspects.",
     "nextAction" => "Preserve the visual direction and use it as the front-facing hook while improving guidance and value clarity.",
     "evidence" => [
-      "Top positive mention: 20/43 J+7 respondents, 46.5%, cited graphic rendering among the most appreciated aspects.",
-      "Stronger than other positive items: graphics exceeded results consultation (18/43) and questioning (16/43).",
-      "Weaker negative signal: only 8/43, 18.6%, cited graphics among least appreciated; the positive signal exceeds the negative by +12 respondents.",
+      "Top positive mention: 28/55 J+7 respondents, 50.9%, cited graphic rendering among the most appreciated aspects.",
+      "Stronger than other positive items: graphics exceeded results consultation (22/55) and questioning (21/55).",
+      "Weaker negative signal: only 8/55, 14.5%, cited graphics among least appreciated; the positive signal exceeds the negative by +20 respondents.",
       "Qualitative support: #{tester_ref_by_quote.call("design est bien et agréable")} wrote that the design was good and pleasant for navigation.",
       "Recognized despite criticism: #{tester_ref_by_quote.call("cela reste une belle application")} concluded that it remains a beautiful app, while asking for more concrete solutions."
     ]
@@ -409,12 +430,12 @@ main_cards = [
     "theme" => "results",
     "status" => "Strength",
     "severity" => 2,
-    "mainEvidence" => "18/43 J+7 respondents, 41.9%, appreciated consulting personality results; 16/43, 37.2%, appreciated questioning.",
+    "mainEvidence" => "22/55 J+7 respondents, 40.0%, appreciated consulting personality results; 21/55, 38.2%, appreciated questioning.",
     "nextAction" => "Keep the personality/results promise, but make interpretation clearer, safer and more actionable.",
     "evidence" => [
-      "Results strongly appreciated: 18/43 J+7 respondents, 41.9%, cited personality result consultation among the most appreciated aspects.",
-      "Questioning also attractive: 16/43, 37.2%, cited the questioning experience among the most appreciated aspects.",
-      "Improvement-oriented comments: qualitative analysis found 15 comments linked to results/personality from 10 distinct users.",
+      "Results strongly appreciated: 22/55 J+7 respondents, 40.0%, cited personality result consultation among the most appreciated aspects.",
+      "Questioning also attractive: 21/55, 38.2%, cited the questioning experience among the most appreciated aspects.",
+      "Improvement-oriented comments: qualitative analysis found 16 comments linked to results/personality from 11 distinct users.",
       "Explicit expectation of analysis: #{tester_ref_by_quote.call("hâte de lire les analyses")} wrote that they were looking forward to reading the analyses and that some results matched quite well.",
       "Retrospective relevance: #{tester_ref_by_quote.call("pertinence du rendu sur la personnalité")} mentioned the relevance of the personality rendering after answering the questions."
     ]
@@ -426,10 +447,10 @@ main_cards = [
     "theme" => "ritual",
     "status" => "Strength",
     "severity" => 2,
-    "mainEvidence" => "16/43 J+7 respondents, 37.2%, reported at least a slight positive effect.",
+    "mainEvidence" => "24/55 J+7 respondents, 43.6%, reported at least a slight positive effect.",
     "nextAction" => "Design for calm, short and repeatable sessions; turn this into an intentional ritual loop rather than an accidental effect.",
     "evidence" => [
-      "A light positive effect exists: 16/43 J+7 respondents, 37.2%, declared at least a slight positive effect.",
+      "A light positive effect exists: 24/55 J+7 respondents, 43.6%, declared at least a slight positive effect.",
       "Explicit ritualization: #{tester_ref_by_quote.call("C'est devenu un rituel")} wrote \"It became a ritual\" and showed a very engaged flow: 23 active days, 114 sessions, 10.7 active hours, J+7 score 8.",
       "Rest/relaxation explicit: #{tester_ref_by_quote.call("Sympa, relaxant")} wrote that the experience was restful, then \"nice, relaxing\"; their flow was heavy: 17 active days, 66 sessions, 25.2 active hours.",
       "Relaxation explicit: #{tester_ref_by_quote.call("certaine détente")} wrote that they felt some relaxation when using the app; flow: 12 active days, 37 sessions, J+7 score 7.",
@@ -443,13 +464,13 @@ main_cards = [
     "theme" => "retention",
     "status" => "Strength",
     "severity" => 2,
-    "mainEvidence" => "33/43 J+7 respondents, 76.7%, answered Yes or Probably for a fuller version.",
+    "mainEvidence" => "44/55 J+7 respondents, 80.0%, answered Yes or Probably for a fuller version.",
     "nextAction" => "Keep the beta/recontact funnel active and frame the fuller version around prevention, concrete benefits, levels and richer tiles.",
     "evidence" => [
-      "Probable or definite download: 33/43 J+7 respondents, 76.7%, answered Yes or Probably for a fuller version.",
-      "Beta recontact accepted: 33/43, 76.7%, accepted being recontacted for the beta playtest.",
-      "Post-test memory: 26/43, 60.5%, said they had thought about the app sometimes or often since the end of the test.",
-      "Natural cadence remains credible: 36/43, 83.7%, imagine a natural frequency of daily or a few times per week.",
+      "Probable or definite download: 44/55 J+7 respondents, 80.0%, answered Yes or Probably for a fuller version.",
+      "Beta recontact accepted: 44/55, 80.0%, accepted being recontacted for the beta playtest.",
+      "Post-test memory: 36/55, 65.5%, said they had thought about the app sometimes or often since the end of the test.",
+      "Natural cadence remains credible: 47/55, 85.5%, imagine a natural frequency of daily or a few times per week.",
       "Screened population predisposed to multi-day use: 369/373, 98.9%, said they were comfortable with a multi-day app, either without issue or if it was not too constraining."
     ]
   },
@@ -460,12 +481,12 @@ main_cards = [
     "theme" => "guidance",
     "status" => "Weakness",
     "severity" => 4,
-    "mainEvidence" => "25/43 J+7 respondents, 58.1%, said they were blocked because they did not understand how to progress.",
+    "mainEvidence" => "30/55 J+7 respondents, 54.5%, said they were blocked because they did not understand how to progress.",
     "nextAction" => "Tutorial v2, explicit final objective, and polish for selection, camera and movement.",
     "evidence" => [
-      "Primary J+7 block: 25/43 respondents, 58.1%, said they were blocked because they did not understand how to progress.",
-      "Onboarding/handling highly criticized: 21/43, 48.8%, cited handling, navigation or manipulation among the least appreciated aspects.",
-      "Regular-use brake: 14/43, 32.6%, cited complexity as a usage brake; 10/43, 23.3%, cited lack of support.",
+      "Primary J+7 block: 30/55 respondents, 54.5%, said they were blocked because they did not understand how to progress.",
+      "Onboarding/handling highly criticized: 25/55, 45.5%, cited handling, navigation or manipulation among the least appreciated aspects.",
+      "Regular-use brake: 16/55, 29.1%, cited complexity as a usage brake; 11/55, 20.0%, cited lack of support.",
       "Convergent bug reports: 8/37 deduplicated bug reports were classified as guidance_or_blocked_progress.",
       "The first wow is not enough: first recipe is reached by 84.7%, but median active days remain 3.0 and average J+7 retention is 23.6%."
     ]
@@ -497,9 +518,9 @@ main_cards = [
     "mainEvidence" => "Fusion/grid friction appears across J+7 blockers, least-liked gameplay, comments, bug reports and merge metrics.",
     "nextAction" => "Add codex support, recycling, inversion ritual, recipe memory and grid expansion/dead-end prevention.",
     "evidence" => [
-      "Explicit fusion block: 6/43 J+7 respondents, 14.0%, said they were blocked because they did not understand how to merge tiles.",
-      "Gameplay experience criticized: 13/43, 30.2%, cited gameplay (rituals, fusions, layout) among the least appreciated aspects.",
-      "Numerous comments: 15/43 J+7 respondents, 34.9%, mentioned fusion, tiles, grid or objects as a friction point.",
+      "Explicit fusion block: 7/55 J+7 respondents, 12.7%, said they were blocked because they did not understand how to merge tiles.",
+      "Gameplay experience criticized: 15/55, 27.3%, cited gameplay (rituals, fusions, layout) among the least appreciated aspects.",
+      "Numerous comments: 18/55 J+7 respondents, 32.7%, mentioned fusion, tiles, grid or objects as a friction point.",
       "Convergent bug reports: 10/37 bug reports were classified as tile_fusion_grid_ritual.",
       "Metric confirmation: failed merge ratio median is 29.6%, final fill median is 42.0%, and median interactions per recipe are 35.2."
     ]
@@ -511,12 +532,12 @@ main_cards = [
     "theme" => "audio",
     "status" => "Weakness",
     "severity" => 3,
-    "mainEvidence" => "6/43 J+7 respondents, 14.0%, played without sound because music or sound design did not please them.",
+    "mainEvidence" => "7/55 J+7 respondents, 12.7%, played without sound because music or sound design did not please them.",
     "nextAction" => "Rework audio toward a more ambient, optional and situational sound design.",
     "evidence" => [
-      "Direct sound rejection: 6/43 J+7 respondents, 14.0%, said they played without sound because music or sound design did not please them.",
-      "Music among least appreciated: 6/43, 14.0%, cited music among the least appreciated aspects.",
-      "Clear qualitative comments: 5/43 respondents, 11.6%, formulated comments such as stressful, unpleasant or dislike.",
+      "Direct sound rejection: 7/55 J+7 respondents, 12.7%, said they played without sound because music or sound design did not please them.",
+      "Music among least appreciated: 7/55, 12.7%, cited music among the least appreciated aspects.",
+      "Clear qualitative comments: 4/55 respondents, 7.3%, formulated comments such as stressful, unpleasant or dislike.",
       "Audio bug reports: 2/37 bug reports were classified as audio.",
       "Instrumentation remains insufficient: median sessions with non-zero device volume is 64.3%, but this does not prove that Kaleotopia music was active or appreciated."
     ]
@@ -528,11 +549,11 @@ main_cards = [
     "theme" => "questionnaire",
     "status" => "Weakness",
     "severity" => 3,
-    "mainEvidence" => "13/43 J+7 respondents, 30.2%, cited the questioning experience among the least appreciated aspects.",
+    "mainEvidence" => "14/55 J+7 respondents, 25.5%, cited the questioning experience among the least appreciated aspects.",
     "nextAction" => "Fix item wording and repetition, add clearer progress/objectives, and improve custom result interpretation.",
     "evidence" => [
-      "Questioning criticized: 13/43 J+7 respondents, 30.2%, cited the questioning experience among the least appreciated aspects.",
-      "Repetition comments: 6/43 J+7 respondents, 14.0%, explicitly mentioned repetitive or redundant questions.",
+      "Questioning criticized: 14/55 J+7 respondents, 25.5%, cited the questioning experience among the least appreciated aspects.",
+      "Repetition comments: 9/55 J+7 respondents, 16.4%, explicitly mentioned repetitive or redundant questions.",
       "Exact repeat metric: exact question repeats reached 39.7% in the measured question flow.",
       "Slow progress: median BFI completion proxy remains 5.0%, so repeated or semi-opposite items often fail to feel worthwhile.",
       "Not a per-question duration problem: median seconds per question is 6.16s; friction comes more from perceived repetition and weak value feedback."

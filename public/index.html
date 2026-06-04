@@ -65,7 +65,7 @@
           </div>
 
           <div class="toggle-list">
-            <label><input id="screeningOnly" type="checkbox"> <span data-i18n="filters.hasScreening">Has screening</span></label>
+            <label><input id="screeningOnly" type="checkbox" checked> <span data-i18n="filters.hasScreening">Has screening</span></label>
             <label><input id="endOnly" type="checkbox"> <span data-i18n="filters.hasEnd">Has end questionnaire</span></label>
             <label><input id="j7Only" type="checkbox"> <span data-i18n="filters.hasJ7">Has J+7</span></label>
             <label><input id="allQuestionnairesOnly" type="checkbox"> <span data-i18n="filters.fullChain">Full questionnaire chain</span></label>
@@ -100,6 +100,9 @@
                   </div>
                   <button id="cardViewModeToggle" class="icon-button card-view-toggle" type="button" aria-label="Switch to detailed card view" data-i18n-aria-label="cards.viewModeAria" data-tooltip="Switch to detailed card view">
                     <span class="card-view-toggle__icon" aria-hidden="true"></span>
+                  </button>
+                  <button id="cardsFullscreenToggle" class="icon-button cards-fullscreen-toggle" type="button" aria-label="Show cards fullscreen" data-tooltip="Show cards fullscreen">
+                    <span class="cards-fullscreen-toggle__icon" aria-hidden="true"></span>
                   </button>
                   <select id="themeFilter" aria-label="Card theme" data-i18n-aria-label="cards.themeAria"></select>
                 </div>

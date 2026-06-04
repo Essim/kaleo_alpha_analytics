@@ -21,6 +21,7 @@ const els = {
   mainCardsTab: document.querySelector("#mainCardsTab"),
   moreCardsTab: document.querySelector("#moreCardsTab"),
   cardViewModeToggle: document.querySelector("#cardViewModeToggle"),
+  cardsFullscreenToggle: document.querySelector("#cardsFullscreenToggle"),
   actionCards: document.querySelector("#actionCards"),
   actionDetail: document.querySelector("#actionDetail"),
   detailPane: document.querySelector(".detail-pane"),
@@ -79,6 +80,8 @@ const UI = {
     "cards.viewModeAria": "Switch card display mode",
     "cards.switchToDetailed": "Switch to detailed card view",
     "cards.switchToSimple": "Switch to simple card view",
+    "cards.enterFullscreen": "Show cards fullscreen",
+    "cards.exitFullscreen": "Exit cards fullscreen",
     "card.kind.strength": "Strength",
     "card.kind.weakness": "Weakness",
     "card.kind.card": "Card",
@@ -235,6 +238,8 @@ const UI = {
     "cards.viewModeAria": "Changer le mode d'affichage des cartes",
     "cards.switchToDetailed": "Passer en affichage détaillé des cartes",
     "cards.switchToSimple": "Passer en affichage simple des cartes",
+    "cards.enterFullscreen": "Afficher les cartes en plein écran",
+    "cards.exitFullscreen": "Quitter le plein écran des cartes",
     "card.kind.strength": "Force",
     "card.kind.weakness": "Faiblesse",
     "card.kind.card": "Carte",
@@ -1046,6 +1051,7 @@ const state = {
   lang: localStorage.getItem("kaleotopiaAnalyticsLang") || "en",
   cardTab: "main",
   cardViewMode: localStorage.getItem("kaleotopiaCardViewMode") || "simple",
+  cardsFullscreen: false,
   sortMode: "impact"
 };
 
@@ -1471,6 +1477,12 @@ function refreshFilterLabels() {
   els.themeFilter.value = values.theme;
 }
 
+function setCardsFullscreen(enabled) {
+  state.cardsFullscreen = Boolean(enabled);
+  document.body.classList.toggle("cards-fullscreen-mode", state.cardsFullscreen);
+  renderChrome();
+}
+
 function renderChrome() {
   document.documentElement.lang = state.lang;
   document.title = t("app.documentTitle");
@@ -1499,6 +1511,11 @@ function renderChrome() {
   els.cardViewModeToggle.setAttribute("data-tooltip", switchLabel);
   els.cardViewModeToggle.setAttribute("aria-label", switchLabel);
   els.cardViewModeToggle.classList.toggle("is-detail-mode", state.cardViewMode === "detail");
+  const fullscreenLabel = state.cardsFullscreen ? t("cards.exitFullscreen") : t("cards.enterFullscreen");
+  els.cardsFullscreenToggle.removeAttribute("title");
+  els.cardsFullscreenToggle.setAttribute("data-tooltip", fullscreenLabel);
+  els.cardsFullscreenToggle.setAttribute("aria-label", fullscreenLabel);
+  els.cardsFullscreenToggle.classList.toggle("is-fullscreen", state.cardsFullscreen);
   const flagsLabel = els.flagsOnly.closest("label")?.querySelector("span");
   if (flagsLabel) flagsLabel.setAttribute("data-tooltip", termDefinition("coherenceFlag"));
 }
@@ -1531,13 +1548,13 @@ function bindEvents() {
     ].forEach((el) => { el.value = ""; });
     els.activeDaysMin.value = "0";
     [
-      els.screeningOnly,
       els.endOnly,
       els.j7Only,
       els.allQuestionnairesOnly,
       els.flagsOnly,
       els.progressionOnly
     ].forEach((el) => { el.checked = false; });
+    els.screeningOnly.checked = true;
     render();
   });
 
@@ -1573,6 +1590,17 @@ function bindEvents() {
     localStorage.setItem("kaleotopiaCardViewMode", state.cardViewMode);
     renderChrome();
     renderActionCards();
+  });
+
+  els.cardsFullscreenToggle.addEventListener("click", () => {
+    setCardsFullscreen(!state.cardsFullscreen);
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && state.cardsFullscreen) {
+      event.preventDefault();
+      setCardsFullscreen(false);
+    }
   });
 
   [
