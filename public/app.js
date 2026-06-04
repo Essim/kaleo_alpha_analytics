@@ -1,5 +1,6 @@
 const els = {
   generatedAt: document.querySelector("#generatedAt"),
+  filterCollapseToggle: document.querySelector("#filterCollapseToggle"),
   resetFilters: document.querySelector("#resetFilters"),
   searchInput: document.querySelector("#searchInput"),
   ageFilter: document.querySelector("#ageFilter"),
@@ -15,24 +16,53 @@ const els = {
   flagsOnly: document.querySelector("#flagsOnly"),
   progressionOnly: document.querySelector("#progressionOnly"),
   subsetSentence: document.querySelector("#subsetSentence"),
+  overviewSection: document.querySelector(".overview"),
   statsGrid: document.querySelector("#statsGrid"),
+  kpiSection: document.querySelector("#kpiSection"),
+  kpiSentence: document.querySelector("#kpiSentence"),
+  kpiGrid: document.querySelector("#kpiGrid"),
   workbench: document.querySelector("#workbench"),
+  j7MacroSection: document.querySelector("#j7MacroSection"),
+  j7MacroSentence: document.querySelector("#j7MacroSentence"),
+  j7MacroGrid: document.querySelector("#j7MacroGrid"),
   themeFilter: document.querySelector("#themeFilter"),
   mainCardsTab: document.querySelector("#mainCardsTab"),
   moreCardsTab: document.querySelector("#moreCardsTab"),
   cardViewModeToggle: document.querySelector("#cardViewModeToggle"),
-  cardsFullscreenToggle: document.querySelector("#cardsFullscreenToggle"),
   actionCards: document.querySelector("#actionCards"),
   actionDetail: document.querySelector("#actionDetail"),
   detailPane: document.querySelector(".detail-pane"),
+  testerExplorer: document.querySelector(".tester-explorer"),
   testerList: document.querySelector("#testerList"),
   testerDetail: document.querySelector("#testerDetail"),
   sortImpact: document.querySelector("#sortImpact"),
   sortActivity: document.querySelector("#sortActivity"),
   sortScore: document.querySelector("#sortScore"),
+  showOverviewSection: document.querySelector("#showOverviewSection"),
+  showKpiSection: document.querySelector("#showKpiSection"),
+  showCardsSection: document.querySelector("#showCardsSection"),
+  showJ7Section: document.querySelector("#showJ7Section"),
+  showTesterSection: document.querySelector("#showTesterSection"),
   langEn: document.querySelector("#langEn"),
   langFr: document.querySelector("#langFr")
 };
+
+const SECTION_KEYS = ["overview", "kpis", "cards", "j7", "tester"];
+const DEFAULT_VISIBLE_SECTIONS = {
+  overview: true,
+  kpis: true,
+  cards: true,
+  j7: true,
+  tester: true
+};
+
+function loadVisibleSections() {
+  try {
+    return { ...DEFAULT_VISIBLE_SECTIONS, ...JSON.parse(localStorage.getItem("kaleotopiaVisibleSections") || "{}") };
+  } catch {
+    return { ...DEFAULT_VISIBLE_SECTIONS };
+  }
+}
 
 const UI = {
   en: {
@@ -46,6 +76,8 @@ const UI = {
     "app.dataRequestFailed": "Data request failed: {status}",
     "filters.aria": "Dynamic filters",
     "filters.title": "Filter testers",
+    "filters.collapse": "Collapse filter panel",
+    "filters.expand": "Expand filter panel",
     "filters.reset": "Reset",
     "filters.search": "Search tester",
     "filters.searchPlaceholder": "KT-001, version, platform",
@@ -67,6 +99,12 @@ const UI = {
     "filters.allThemes": "All card themes",
     "filters.activeDaysMin": ">= {count} days",
     "filters.activeDaysAll": "0 - max",
+    "sections.menuTitle": "Display sections",
+    "sections.overview": "Macro overview",
+    "sections.kpis": "KPI dashboard",
+    "sections.cards": "Macro cards",
+    "sections.j7Macro": "J+7 macro",
+    "sections.tester": "Tester flow",
     "overview.eyebrow": "Live subset",
     "overview.title": "Macro view",
     "overview.computing": "Computing filtered population.",
@@ -80,8 +118,38 @@ const UI = {
     "cards.viewModeAria": "Switch card display mode",
     "cards.switchToDetailed": "Switch to detailed card view",
     "cards.switchToSimple": "Switch to simple card view",
-    "cards.enterFullscreen": "Show cards fullscreen",
-    "cards.exitFullscreen": "Exit cards fullscreen",
+    "kpis.eyebrow": "22 KPI set",
+    "kpis.title": "KPI dashboard",
+    "kpis.computing": "Computing KPI distribution.",
+    "kpis.sentence": "{count} filtered testers · dynamic statistics over numeric KPI values.",
+    "kpis.noData": "No numeric KPI value for this subset.",
+    "kpis.n": "n",
+    "kpis.mean": "mean",
+    "kpis.median": "median",
+    "kpis.std": "std dev",
+    "kpis.q1": "Q1",
+    "kpis.q3": "Q3",
+    "j7Macro.eyebrow": "Post-alpha questionnaire",
+    "j7Macro.title": "J+7 macro",
+    "j7Macro.computing": "Computing J+7 distribution.",
+    "j7Macro.sentence": "{count} J+7 respondents in the current filtered subset.",
+    "j7Macro.noData": "No J+7 respondent in this subset.",
+    "j7Macro.count": "count",
+    "j7Macro.share": "share",
+    "j7Macro.score": "Overall score",
+    "j7Macro.thought": "Thought of the app",
+    "j7Macro.effect": "Perceived positive effect",
+    "j7Macro.frequency": "Natural frequency",
+    "j7Macro.sound": "Sound usage",
+    "j7Macro.download": "Download intent",
+    "j7Macro.beta": "Beta recontact",
+    "j7Macro.blockers": "Blockers",
+    "j7Macro.liked": "Liked aspects",
+    "j7Macro.disliked": "Disliked aspects",
+    "context.title": "Criticality by context",
+    "context.age": "Age",
+    "context.platform": "Platform",
+    "context.noData": "No contextual split available in this subset.",
     "card.kind.strength": "Strength",
     "card.kind.weakness": "Weakness",
     "card.kind.card": "Card",
@@ -204,6 +272,8 @@ const UI = {
     "app.dataRequestFailed": "Requête de données échouée : {status}",
     "filters.aria": "Filtres dynamiques",
     "filters.title": "Filtrer les testeurs",
+    "filters.collapse": "Replier le panneau de filtres",
+    "filters.expand": "Déplier le panneau de filtres",
     "filters.reset": "Réinitialiser",
     "filters.search": "Rechercher un testeur",
     "filters.searchPlaceholder": "KT-001, version, plateforme",
@@ -225,6 +295,12 @@ const UI = {
     "filters.allThemes": "Tous les thèmes de cartes",
     "filters.activeDaysMin": ">= {count} jours",
     "filters.activeDaysAll": "0 - max",
+    "sections.menuTitle": "Afficher les sections",
+    "sections.overview": "Vue macro",
+    "sections.kpis": "Tableau KPI",
+    "sections.cards": "Cartes macro",
+    "sections.j7Macro": "Macro J+7",
+    "sections.tester": "Parcours testeur",
     "overview.eyebrow": "Sous-population active",
     "overview.title": "Vue macro",
     "overview.computing": "Calcul de la population filtrée.",
@@ -238,8 +314,38 @@ const UI = {
     "cards.viewModeAria": "Changer le mode d'affichage des cartes",
     "cards.switchToDetailed": "Passer en affichage détaillé des cartes",
     "cards.switchToSimple": "Passer en affichage simple des cartes",
-    "cards.enterFullscreen": "Afficher les cartes en plein écran",
-    "cards.exitFullscreen": "Quitter le plein écran des cartes",
+    "kpis.eyebrow": "Liste des 22 KPI",
+    "kpis.title": "Tableau KPI",
+    "kpis.computing": "Calcul de la distribution KPI.",
+    "kpis.sentence": "{count} testeurs filtrés · statistiques dynamiques sur les valeurs KPI numériques.",
+    "kpis.noData": "Aucune valeur KPI numérique pour cette sous-population.",
+    "kpis.n": "n",
+    "kpis.mean": "moy.",
+    "kpis.median": "médiane",
+    "kpis.std": "écart-type",
+    "kpis.q1": "Q1",
+    "kpis.q3": "Q3",
+    "j7Macro.eyebrow": "Questionnaire post-alpha",
+    "j7Macro.title": "Macro J+7",
+    "j7Macro.computing": "Calcul de la distribution J+7.",
+    "j7Macro.sentence": "{count} répondants J+7 dans la sous-population filtrée.",
+    "j7Macro.noData": "Aucun répondant J+7 dans cette sous-population.",
+    "j7Macro.count": "nombre",
+    "j7Macro.share": "part",
+    "j7Macro.score": "Note globale",
+    "j7Macro.thought": "Souvenir de l'app",
+    "j7Macro.effect": "Effet positif perçu",
+    "j7Macro.frequency": "Fréquence naturelle",
+    "j7Macro.sound": "Usage du son",
+    "j7Macro.download": "Intention de téléchargement",
+    "j7Macro.beta": "Recontact bêta",
+    "j7Macro.blockers": "Blocages",
+    "j7Macro.liked": "Aspects appréciés",
+    "j7Macro.disliked": "Aspects moins appréciés",
+    "context.title": "Criticité par contexte",
+    "context.age": "Âge",
+    "context.platform": "Plateforme",
+    "context.noData": "Aucune répartition contextuelle disponible dans cette sous-population.",
     "card.kind.strength": "Force",
     "card.kind.weakness": "Faiblesse",
     "card.kind.card": "Carte",
@@ -1051,7 +1157,8 @@ const state = {
   lang: localStorage.getItem("kaleotopiaAnalyticsLang") || "en",
   cardTab: "main",
   cardViewMode: localStorage.getItem("kaleotopiaCardViewMode") || "simple",
-  cardsFullscreen: false,
+  filtersCollapsed: localStorage.getItem("kaleotopiaFiltersCollapsed") === "true",
+  visibleSections: loadVisibleSections(),
   sortMode: "impact"
 };
 
@@ -1136,6 +1243,10 @@ function num(value) {
   return Number.isFinite(n) ? n : null;
 }
 
+function yesValue(value) {
+  return String(value || "").trim().toLowerCase() === "oui";
+}
+
 function median(values) {
   const clean = values.map(num).filter((v) => v !== null).sort((a, b) => a - b);
   if (!clean.length) return null;
@@ -1143,10 +1254,41 @@ function median(values) {
   return clean.length % 2 ? clean[mid] : (clean[mid - 1] + clean[mid]) / 2;
 }
 
+function quantile(values, q) {
+  const clean = values.map(num).filter((v) => v !== null).sort((a, b) => a - b);
+  if (!clean.length) return null;
+  if (clean.length === 1) return clean[0];
+  const pos = (clean.length - 1) * q;
+  const lower = Math.floor(pos);
+  const upper = Math.ceil(pos);
+  if (lower === upper) return clean[lower];
+  return clean[lower] + (clean[upper] - clean[lower]) * (pos - lower);
+}
+
 function mean(values) {
   const clean = values.map(num).filter((v) => v !== null);
   if (!clean.length) return null;
   return clean.reduce((sum, value) => sum + value, 0) / clean.length;
+}
+
+function stdDev(values) {
+  const clean = values.map(num).filter((v) => v !== null);
+  if (clean.length < 2) return null;
+  const avg = mean(clean);
+  const variance = clean.reduce((sum, value) => sum + ((value - avg) ** 2), 0) / (clean.length - 1);
+  return Math.sqrt(variance);
+}
+
+function metricStats(values) {
+  const clean = values.map(num).filter((v) => v !== null);
+  return {
+    n: clean.length,
+    mean: mean(clean),
+    median: median(clean),
+    std: stdDev(clean),
+    q1: quantile(clean, 0.25),
+    q3: quantile(clean, 0.75)
+  };
 }
 
 function percent(part, total) {
@@ -1156,6 +1298,14 @@ function percent(part, total) {
 
 function numericCount(values) {
   return values.map(num).filter((v) => v !== null).length;
+}
+
+function countBy(values) {
+  const counts = new Map();
+  values.flat().map((value) => String(value ?? "").trim()).filter(Boolean).forEach((value) => {
+    counts.set(value, (counts.get(value) || 0) + 1);
+  });
+  return [...counts.entries()].map(([label, count]) => ({ label, count })).sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
 }
 
 function lineJoin(lines) {
@@ -1194,6 +1344,12 @@ function aggregationFormula(type, context = {}) {
     if (type === "mean") {
       return `Valeur affichée = moyenne arithmétique sur ${scope} : somme des valeurs numériques / nombre de valeurs numériques. Les valeurs null/NA sont exclues. Taille d'échantillon actuelle : ${sample}.`;
     }
+    if (type === "std") {
+      return `Valeur affichée = écart-type échantillon sur ${scope}. Les valeurs null/NA sont exclues. Formule : racine carrée de Σ(x - moyenne)^2 / (n - 1). Taille d'échantillon actuelle : ${sample}.`;
+    }
+    if (type === "quartile") {
+      return `Valeur affichée = quartile sur ${scope}. Les valeurs numériques sont triées ; la position est interpolée linéairement sur (n - 1) × q, avec q=0.25 pour Q1 et q=0.75 pour Q3.`;
+    }
     if (type === "count") {
       return `Valeur affichée = nombre de ${scope}${context.condition ? ` qui vérifient : ${context.condition}` : ""}.`;
     }
@@ -1213,6 +1369,12 @@ function aggregationFormula(type, context = {}) {
   }
   if (type === "mean") {
     return `Displayed value = arithmetic mean over ${scope}: sum of numeric values / count of numeric values. Null/NA values are excluded. Current numeric sample size: ${sample}.`;
+  }
+  if (type === "std") {
+    return `Displayed value = sample standard deviation over ${scope}. Null/NA values are excluded. Formula: square root of Σ(x - mean)^2 / (n - 1). Current numeric sample size: ${sample}.`;
+  }
+  if (type === "quartile") {
+    return `Displayed value = quartile over ${scope}. Numeric values are sorted; the position is linearly interpolated on (n - 1) × q, with q=0.25 for Q1 and q=0.75 for Q3.`;
   }
   if (type === "count") {
     return `Displayed value = count of ${scope}${context.condition ? ` matching: ${context.condition}` : ""}.`;
@@ -1477,10 +1639,29 @@ function refreshFilterLabels() {
   els.themeFilter.value = values.theme;
 }
 
-function setCardsFullscreen(enabled) {
-  state.cardsFullscreen = Boolean(enabled);
-  document.body.classList.toggle("cards-fullscreen-mode", state.cardsFullscreen);
+function setFiltersCollapsed(enabled) {
+  state.filtersCollapsed = Boolean(enabled);
+  localStorage.setItem("kaleotopiaFiltersCollapsed", String(state.filtersCollapsed));
+  document.body.classList.toggle("filters-collapsed", state.filtersCollapsed);
   renderChrome();
+}
+
+function saveVisibleSections() {
+  localStorage.setItem("kaleotopiaVisibleSections", JSON.stringify(state.visibleSections));
+}
+
+function setSectionVisibility(key, visible) {
+  state.visibleSections[key] = Boolean(visible);
+  saveVisibleSections();
+  applySectionVisibility();
+}
+
+function applySectionVisibility() {
+  els.overviewSection.hidden = !state.visibleSections.overview;
+  els.kpiSection.hidden = !state.visibleSections.kpis;
+  els.workbench.hidden = !state.visibleSections.cards;
+  els.j7MacroSection.hidden = !state.visibleSections.j7;
+  els.testerExplorer.hidden = !state.visibleSections.tester;
 }
 
 function renderChrome() {
@@ -1498,6 +1679,19 @@ function renderChrome() {
   els.langEn.classList.toggle("active", state.lang === "en");
   els.langFr.classList.toggle("active", state.lang === "fr");
   els.generatedAt.textContent = state.data ? t("app.generatedAt", { date: state.data.generatedAt }) : t("app.loadingData");
+  document.body.classList.toggle("filters-collapsed", state.filtersCollapsed);
+  const filterToggleLabel = state.filtersCollapsed ? t("filters.expand") : t("filters.collapse");
+  els.filterCollapseToggle.removeAttribute("title");
+  els.filterCollapseToggle.setAttribute("data-tooltip", filterToggleLabel);
+  els.filterCollapseToggle.setAttribute("aria-label", filterToggleLabel);
+  els.filterCollapseToggle.classList.toggle("is-collapsed", state.filtersCollapsed);
+  [
+    [els.showOverviewSection, "overview"],
+    [els.showKpiSection, "kpis"],
+    [els.showCardsSection, "cards"],
+    [els.showJ7Section, "j7"],
+    [els.showTesterSection, "tester"]
+  ].forEach(([checkbox, key]) => { checkbox.checked = state.visibleSections[key]; });
   els.sortImpact.removeAttribute("title");
   els.sortActivity.removeAttribute("title");
   els.sortScore.removeAttribute("title");
@@ -1511,16 +1705,26 @@ function renderChrome() {
   els.cardViewModeToggle.setAttribute("data-tooltip", switchLabel);
   els.cardViewModeToggle.setAttribute("aria-label", switchLabel);
   els.cardViewModeToggle.classList.toggle("is-detail-mode", state.cardViewMode === "detail");
-  const fullscreenLabel = state.cardsFullscreen ? t("cards.exitFullscreen") : t("cards.enterFullscreen");
-  els.cardsFullscreenToggle.removeAttribute("title");
-  els.cardsFullscreenToggle.setAttribute("data-tooltip", fullscreenLabel);
-  els.cardsFullscreenToggle.setAttribute("aria-label", fullscreenLabel);
-  els.cardsFullscreenToggle.classList.toggle("is-fullscreen", state.cardsFullscreen);
   const flagsLabel = els.flagsOnly.closest("label")?.querySelector("span");
   if (flagsLabel) flagsLabel.setAttribute("data-tooltip", termDefinition("coherenceFlag"));
+  applySectionVisibility();
 }
 
 function bindEvents() {
+  els.filterCollapseToggle.addEventListener("click", () => {
+    setFiltersCollapsed(!state.filtersCollapsed);
+  });
+
+  [
+    [els.showOverviewSection, "overview"],
+    [els.showKpiSection, "kpis"],
+    [els.showCardsSection, "cards"],
+    [els.showJ7Section, "j7"],
+    [els.showTesterSection, "tester"]
+  ].forEach(([checkbox, key]) => {
+    checkbox.addEventListener("input", () => setSectionVisibility(key, checkbox.checked));
+  });
+
   [
     els.searchInput,
     els.ageFilter,
@@ -1590,17 +1794,6 @@ function bindEvents() {
     localStorage.setItem("kaleotopiaCardViewMode", state.cardViewMode);
     renderChrome();
     renderActionCards();
-  });
-
-  els.cardsFullscreenToggle.addEventListener("click", () => {
-    setCardsFullscreen(!state.cardsFullscreen);
-  });
-
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && state.cardsFullscreen) {
-      event.preventDefault();
-      setCardsFullscreen(false);
-    }
   });
 
   [
@@ -1741,6 +1934,156 @@ function renderStats(users) {
   }).join("");
   els.subsetSentence.textContent = t("overview.subsetSentence", { shown: s.total, total: state.data.users.length, flags: s.flags });
   els.subsetSentence.setAttribute("data-tooltip", lineJoin([termDefinition("subset"), termDefinition("coherenceFlag")]));
+}
+
+function metricShortLabel(metric) {
+  return String(metric || "")
+    .replace(/^KPI_\d+_[^_]+__/, "")
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function kpiFormula(def, statType, sample) {
+  return lineJoin([
+    aggregationFormula(statType, {
+      scope: state.lang === "fr" ? "la sous-population filtrée actuelle" : "the current filtered subset",
+      sample
+    }),
+    def?.formula ? `${state.lang === "fr" ? "Formule source" : "Source formula"}: ${def.formula}` : "",
+    def?.limits ? `${state.lang === "fr" ? "Limites" : "Limits"}: ${def.limits}` : ""
+  ]);
+}
+
+function renderKpiSection(users) {
+  const groups = state.data.kpiGroups || [];
+  els.kpiSentence.textContent = t("kpis.sentence", { count: users.length });
+  if (!groups.length) {
+    els.kpiGrid.innerHTML = `<div class="empty-state">${esc(t("kpis.noData"))}</div>`;
+    return;
+  }
+  els.kpiGrid.innerHTML = groups.map((group) => {
+    const rows = (group.metrics || [])
+      .map((metric) => {
+        const values = users.map((user) => user.kpis?.[metric.key]);
+        return { metric, stats: metricStats(values) };
+      })
+      .filter((row) => row.stats.n > 0)
+      .slice(0, 3);
+    return `
+      <article class="kpi-card">
+        <header>
+          <span>${esc(group.id)}</span>
+          <h3>${esc(group.name)}</h3>
+        </header>
+        ${rows.length ? `
+          <table class="metric-table">
+            <thead>
+              <tr>
+                <th>${esc(state.lang === "fr" ? "Métrique" : "Metric")}</th>
+                <th>${esc(t("kpis.n"))}</th>
+                <th>${esc(t("kpis.median"))}</th>
+                <th>${esc(t("kpis.mean"))}</th>
+                <th>${esc(t("kpis.std"))}</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows.map(({ metric, stats }) => `
+                <tr>
+                  <td>${metricLabel(metricShortLabel(metric.metric), kpiFormula(metric, "median", stats.n))}</td>
+                  <td>${esc(stats.n)}</td>
+                  <td ${tooltipAttrs(kpiFormula(metric, "median", stats.n))}>${esc(fmtNumber(stats.median))}</td>
+                  <td ${tooltipAttrs(kpiFormula(metric, "mean", stats.n))}>${esc(fmtNumber(stats.mean))}</td>
+                  <td ${tooltipAttrs(kpiFormula(metric, "std", stats.n))}>${esc(fmtNumber(stats.std))}</td>
+                </tr>
+                <tr class="quartile-row">
+                  <td colspan="5">${esc(t("kpis.q1"))}: ${esc(fmtNumber(stats.q1))} · ${esc(t("kpis.q3"))}: ${esc(fmtNumber(stats.q3))}${formulaTip(kpiFormula(metric, "quartile", stats.n))}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        ` : `<div class="empty-state">${esc(t("kpis.noData"))}</div>`}
+      </article>
+    `;
+  }).join("");
+}
+
+function distributionBars(entries, total) {
+  if (!entries.length || !total) return `<div class="empty-state">${esc(t("j7Macro.noData"))}</div>`;
+  return `<div class="distribution-list">
+    ${entries.slice(0, 8).map((entry) => {
+      const share = percent(entry.count, total) || 0;
+      return `
+        <div class="distribution-row">
+          <div>
+            <strong>${esc(entry.label)}</strong>
+            <span>${esc(entry.count)} · ${valueHtml(fmtPct(share))}</span>
+          </div>
+          ${spark(share, "var(--blue)")}
+        </div>
+      `;
+    }).join("")}
+  </div>`;
+}
+
+function renderJ7DistributionCard(title, entries, total) {
+  const top = entries[0];
+  return `
+    <article class="j7-card">
+      <header>
+        <h3>${esc(title)}</h3>
+        <span>${esc(t("j7Macro.count"))}: ${esc(total)}</span>
+      </header>
+      ${top ? `<p>${esc(state.lang === "fr" ? "Top réponse" : "Top answer")}: <strong>${esc(top.label)}</strong></p>` : ""}
+      ${distributionBars(entries, total)}
+    </article>
+  `;
+}
+
+function blockerLabels(blockers = {}) {
+  return Object.entries(blockers)
+    .filter(([, value]) => yesValue(value))
+    .map(([key]) => ({
+      progression: state.lang === "fr" ? "Progression incomprise" : "Progression unclear",
+      fusion: state.lang === "fr" ? "Fusion incomprise" : "Fusion unclear",
+      technical: state.lang === "fr" ? "Blocage technique" : "Technical block"
+    })[key] || key);
+}
+
+function renderJ7Macro(users) {
+  const j7Users = users.filter((user) => user.hasJ7);
+  els.j7MacroSentence.textContent = t("j7Macro.sentence", { count: j7Users.length });
+  if (!j7Users.length) {
+    els.j7MacroGrid.innerHTML = `<div class="empty-state">${esc(t("j7Macro.noData"))}</div>`;
+    return;
+  }
+  const scoreStats = metricStats(j7Users.map((user) => user.questionnaire?.j7?.score));
+  const scoreCard = `
+    <article class="j7-card j7-card--score">
+      <header>
+        <h3>${esc(t("j7Macro.score"))}</h3>
+        <span>${esc(t("kpis.n"))}: ${esc(scoreStats.n)}</span>
+      </header>
+      <div class="score-stat-grid">
+        <div><span>${esc(t("kpis.median"))}</span><strong>${esc(fmtNumber(scoreStats.median, "/10"))}</strong></div>
+        <div><span>${esc(t("kpis.mean"))}</span><strong>${esc(fmtNumber(scoreStats.mean, "/10"))}</strong></div>
+        <div><span>${esc(t("kpis.std"))}</span><strong>${esc(fmtNumber(scoreStats.std))}</strong></div>
+        <div><span>${esc(t("kpis.q1"))}/${esc(t("kpis.q3"))}</span><strong>${esc(fmtNumber(scoreStats.q1))} / ${esc(fmtNumber(scoreStats.q3))}</strong></div>
+      </div>
+    </article>
+  `;
+  const cards = [
+    scoreCard,
+    renderJ7DistributionCard(t("j7Macro.thought"), countBy(j7Users.map((user) => user.questionnaire?.j7?.thought)), j7Users.length),
+    renderJ7DistributionCard(t("j7Macro.effect"), countBy(j7Users.map((user) => user.questionnaire?.j7?.effect)), j7Users.length),
+    renderJ7DistributionCard(t("j7Macro.frequency"), countBy(j7Users.map((user) => user.questionnaire?.j7?.naturalFrequency)), j7Users.length),
+    renderJ7DistributionCard(t("j7Macro.sound"), countBy(j7Users.map((user) => user.questionnaire?.j7?.sound)), j7Users.length),
+    renderJ7DistributionCard(t("j7Macro.download"), countBy(j7Users.map((user) => user.questionnaire?.j7?.download)), j7Users.length),
+    renderJ7DistributionCard(t("j7Macro.beta"), countBy(j7Users.map((user) => user.questionnaire?.j7?.beta)), j7Users.length),
+    renderJ7DistributionCard(t("j7Macro.blockers"), countBy(j7Users.map((user) => blockerLabels(user.questionnaire?.j7?.blockers))), j7Users.length),
+    renderJ7DistributionCard(t("j7Macro.liked"), countBy(j7Users.map((user) => user.questionnaire?.j7?.liked || [])), j7Users.length),
+    renderJ7DistributionCard(t("j7Macro.disliked"), countBy(j7Users.map((user) => user.questionnaire?.j7?.disliked || [])), j7Users.length)
+  ];
+  els.j7MacroGrid.innerHTML = cards.join("");
 }
 
 function actionCardsForView() {
@@ -2160,6 +2503,63 @@ function sourceLinesForCard(card, users) {
     .slice(0, 80);
 }
 
+function contextBreakdownRows(card, users, dimension) {
+  const groups = new Map();
+  users.forEach((user) => {
+    const labels = dimension === "platform"
+      ? (user.platforms || [])
+      : [user.questionnaire?.screening?.age].filter(Boolean);
+    labels.forEach((label) => {
+      if (!label) return;
+      if (!groups.has(label)) groups.set(label, { label, total: 0, affected: 0 });
+      const group = groups.get(label);
+      group.total += 1;
+      if (userMatchesTheme(user, card.theme)) group.affected += 1;
+    });
+  });
+  return [...groups.values()]
+    .filter((row) => row.total > 0)
+    .map((row) => ({ ...row, rate: percent(row.affected, row.total) || 0 }))
+    .sort((a, b) => b.rate - a.rate || b.affected - a.affected || a.label.localeCompare(b.label));
+}
+
+function contextBarList(rows) {
+  if (!rows.length) return `<div class="empty-state">${esc(t("context.noData"))}</div>`;
+  return `<div class="context-bars">
+    ${rows.slice(0, 8).map((row) => `
+      <div class="context-bar-row">
+        <div>
+          <strong>${esc(row.label)}</strong>
+          <span>${esc(row.affected)}/${esc(row.total)} · ${valueHtml(fmtPct(row.rate))}</span>
+        </div>
+        ${spark(row.rate, row.rate >= 50 ? "var(--red)" : "var(--amber)")}
+      </div>
+    `).join("")}
+  </div>`;
+}
+
+function renderContextBreakdowns(card, users) {
+  const ageRows = contextBreakdownRows(card, users, "age");
+  const platformRows = contextBreakdownRows(card, users, "platform");
+  return `
+    <section class="detail-section context-section">
+      <h3>${esc(t("context.title"))}${formulaTip(state.lang === "fr"
+        ? "Pour chaque groupe : utilisateurs de la sous-population filtrée qui correspondent au thème de la carte / utilisateurs du groupe × 100. Un utilisateur peut compter dans plusieurs plateformes si plusieurs plateformes sont observées."
+        : "For each group: users in the filtered subset matching the card theme / users in that group × 100. A user can count in multiple platforms when multiple platforms are observed.")}</h3>
+      <div class="context-grid">
+        <article>
+          <h4>${esc(t("context.age"))}</h4>
+          ${contextBarList(ageRows)}
+        </article>
+        <article>
+          <h4>${esc(t("context.platform"))}</h4>
+          ${contextBarList(platformRows)}
+        </article>
+      </div>
+    </section>
+  `;
+}
+
 function renderActionDetail() {
   const activeCards = actionCardsForView();
   const allCards = [...(state.data.mainCards || []), ...(state.data.actionCards || [])].map(localizedCard);
@@ -2197,6 +2597,8 @@ function renderActionDetail() {
             `).join("")}
           </div>
         </section>
+
+        ${renderContextBreakdowns(card, state.filteredUsers)}
 
         <details class="detail-section detail-disclosure">
           <summary>
@@ -2688,9 +3090,12 @@ function render() {
   els.activeDaysLabel.textContent = filters.activeDaysMin > 0 ? t("filters.activeDaysMin", { count: filters.activeDaysMin }) : t("filters.activeDaysAll");
   state.filteredUsers = state.data.users.filter((user) => userMatchesFilters(user, filters));
   renderStats(state.filteredUsers);
+  renderKpiSection(state.filteredUsers);
   renderActionCards();
   renderActionDetail();
+  renderJ7Macro(state.filteredUsers);
   renderTesterList();
+  applySectionVisibility();
 }
 
 async function boot() {

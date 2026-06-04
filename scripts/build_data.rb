@@ -118,6 +118,7 @@ bug_rows = csv_rows(File.join(DETAIL_DIR, "bug_reports_extracted.csv"))
 qual_rows = csv_rows(File.join(DETAIL_DIR, "j7_qualitative_examples_with_flow.csv"))
 all_questionnaire_index = csv_rows(File.join(DETAIL_DIR, "Users answered all questionnaires", "_index.csv"))
 kpi_dictionary = csv_rows(File.join(SOURCE_ROOT, "KPIs", "KPI_metric_dictionary.csv"))
+kpi_user_rows = csv_rows(File.join(SOURCE_ROOT, "KPIs", "metrics_by_user_all_kpis.csv"))
 
 participant_by_key = {}
 all_flow.each do |row|
@@ -136,10 +137,22 @@ j7_rows.each do |row|
   participant_by_key[key] ||= row["participant_id"].to_s.strip unless row["participant_id"].to_s.strip.empty?
 end
 
+kpi_by_key = kpi_user_rows.to_h do |row|
+  key = norm_key(row["user_key"])
+  values = {}
+  row.each do |field, value|
+    next if field == "user_key"
+    parsed = num(value)
+    values[field] = parsed unless parsed.nil?
+  end
+  [key, values]
+end
+
 local_id_by_key = {}
 all_keys = (all_flow.map { |r| norm_key(r["user_key_norm"] || r["user_key"]) } |
             screening_rows.map { |r| norm_key(r["user_key_norm"] || r["user_key"]) } |
-            j7_rows.map { |r| norm_key(r["user_key_norm"] || r["matched_user_key_norm"] || r["email_norm"]) }).reject(&:empty?).sort
+            j7_rows.map { |r| norm_key(r["user_key_norm"] || r["matched_user_key_norm"] || r["email_norm"]) } |
+            kpi_user_rows.map { |r| norm_key(r["user_key"]) }).reject(&:empty?).sort
 existing_id_by_key = {}
 if File.exist?(MAP_FILE)
   CSV.foreach(MAP_FILE, headers: true) do |row|
@@ -357,6 +370,7 @@ users = all_flow.map.with_index do |row, index|
     "firstEventAt" => row["first_event_at"],
     "lastEventAt" => row["last_event_at"],
     "metrics" => metrics,
+    "kpis" => kpi_by_key[key] || {},
     "questionnaire" => questionnaire,
     "signals" => signal_from_user(metrics, j7, coherence),
     "timeline" => timeline
@@ -631,8 +645,24 @@ metric_dictionary = kpi_dictionary.first(160).map do |row|
     "kpiId" => row["kpi_id"],
     "name" => row["kpi_name"],
     "metric" => row["metric"],
+    "key" => "#{row["kpi_id"]}__#{row["metric"]}",
     "formula" => row["formula_context"],
     "limits" => row["limits"]
+  }
+end
+
+kpi_groups = metric_dictionary.group_by { |row| row["kpiId"] }.map do |kpi_id, rows|
+  {
+    "id" => kpi_id,
+    "name" => rows.first["name"],
+    "metrics" => rows.map do |row|
+      {
+        "key" => row["key"],
+        "metric" => row["metric"],
+        "formula" => row["formula"],
+        "limits" => row["limits"]
+      }
+    end
   }
 end
 
@@ -658,7 +688,8 @@ data = {
   "qualitativeExamples" => qualitative_examples,
   "coherenceLines" => coherence_lines,
   "sourceLines" => source_lines,
-  "metricDictionary" => metric_dictionary
+  "metricDictionary" => metric_dictionary,
+  "kpiGroups" => kpi_groups
 }
 
 public_data = scrub_public_value(data)

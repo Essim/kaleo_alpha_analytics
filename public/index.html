@@ -25,6 +25,10 @@
 
       <div class="app-shell">
         <aside class="filters" aria-label="Dynamic filters" data-i18n-aria-label="filters.aria">
+          <button id="filterCollapseToggle" class="icon-button filter-collapse-toggle" type="button" aria-label="Collapse filter panel" data-tooltip="Collapse filter panel">
+            <span class="filter-collapse-icon" aria-hidden="true"></span>
+          </button>
+
           <div class="filter-header">
             <h2 data-i18n="filters.title">Filter testers</h2>
             <button id="resetFilters" type="button" data-i18n="filters.reset">Reset</button>
@@ -72,6 +76,15 @@
             <label><input id="flagsOnly" type="checkbox"> <span data-i18n="filters.flagsOnly">Coherence flags only</span></label>
             <label><input id="progressionOnly" type="checkbox"> <span data-i18n="filters.progressionOnly">Progression block signal</span></label>
           </div>
+
+          <div class="section-toggle-list">
+            <h3 data-i18n="sections.menuTitle">Display sections</h3>
+            <label><input id="showOverviewSection" type="checkbox" checked> <span data-i18n="sections.overview">Macro overview</span></label>
+            <label><input id="showKpiSection" type="checkbox" checked> <span data-i18n="sections.kpis">KPI dashboard</span></label>
+            <label><input id="showCardsSection" type="checkbox" checked> <span data-i18n="sections.cards">Macro cards</span></label>
+            <label><input id="showJ7Section" type="checkbox" checked> <span data-i18n="sections.j7Macro">J+7 macro</span></label>
+            <label><input id="showTesterSection" type="checkbox" checked> <span data-i18n="sections.tester">Tester flow</span></label>
+          </div>
         </aside>
 
         <main class="dashboard">
@@ -84,6 +97,17 @@
               <p id="subsetSentence" data-i18n="overview.computing">Computing filtered population.</p>
             </div>
             <div id="statsGrid" class="stats-grid"></div>
+          </section>
+
+          <section id="kpiSection" class="kpi-section">
+            <div class="pane-title">
+              <div>
+                <p class="eyebrow" data-i18n="kpis.eyebrow">22 KPI set</p>
+                <h2 data-i18n="kpis.title">KPI dashboard</h2>
+              </div>
+              <p id="kpiSentence" class="section-note" data-i18n="kpis.computing">Computing KPI distribution.</p>
+            </div>
+            <div id="kpiGrid" class="kpi-grid"></div>
           </section>
 
           <section id="workbench" class="workbench is-detail-closed">
@@ -101,9 +125,6 @@
                   <button id="cardViewModeToggle" class="icon-button card-view-toggle" type="button" aria-label="Switch to detailed card view" data-i18n-aria-label="cards.viewModeAria" data-tooltip="Switch to detailed card view">
                     <span class="card-view-toggle__icon" aria-hidden="true"></span>
                   </button>
-                  <button id="cardsFullscreenToggle" class="icon-button cards-fullscreen-toggle" type="button" aria-label="Show cards fullscreen" data-tooltip="Show cards fullscreen">
-                    <span class="cards-fullscreen-toggle__icon" aria-hidden="true"></span>
-                  </button>
                   <select id="themeFilter" aria-label="Card theme" data-i18n-aria-label="cards.themeAria"></select>
                 </div>
               </div>
@@ -113,6 +134,17 @@
             <div class="detail-pane" hidden>
               <div id="actionDetail"></div>
             </div>
+          </section>
+
+          <section id="j7MacroSection" class="j7-macro-section">
+            <div class="pane-title">
+              <div>
+                <p class="eyebrow" data-i18n="j7Macro.eyebrow">Post-alpha questionnaire</p>
+                <h2 data-i18n="j7Macro.title">J+7 macro</h2>
+              </div>
+              <p id="j7MacroSentence" class="section-note" data-i18n="j7Macro.computing">Computing J+7 distribution.</p>
+            </div>
+            <div id="j7MacroGrid" class="j7-macro-grid"></div>
           </section>
 
           <section class="tester-explorer">
