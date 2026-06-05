@@ -496,7 +496,11 @@ main_cards = [
     "status" => "Weakness",
     "severity" => 4,
     "mainEvidence" => "30/55 J+7 respondents, 54.5%, said they were blocked because they did not understand how to progress.",
-    "nextAction" => "Tutorial v2, explicit final objective, and polish for selection, camera and movement.",
+    "nextAction" => [
+      "- Improve onboarding (Onboarding Beta script)",
+      "- Tease advanced play at the end of onboarding",
+      "- Codex/Telescope/Map and closing rewards"
+    ].join("\n"),
     "evidence" => [
       "Primary J+7 block: 30/55 respondents, 54.5%, said they were blocked because they did not understand how to progress.",
       "Onboarding/handling highly criticized: 25/55, 45.5%, cited handling, navigation or manipulation among the least appreciated aspects.",
@@ -513,7 +517,11 @@ main_cards = [
     "status" => "Weakness",
     "severity" => 3,
     "mainEvidence" => "Among users who visit the observatory, the median journal open rate is 100.0%, while non-journal observatory use is nearly absent.",
-    "nextAction" => "Clarify hub logic: make non-journal observatory affordances visible, instrument them, and explain why users should return.",
+    "nextAction" => [
+      "- Make all features accessible",
+      "- Centralize map and telescope usage (introduced during onboarding)",
+      "- Notification system (red dots) when elements need consulting"
+    ].join("\n"),
     "evidence" => [
       "The observatory is mostly a path to the journal: among users who visit it, the median journal open rate is 100.0%.",
       "Non-journal activity is nearly absent: the median non-journal observatory visit rate is 0.0%.",
@@ -530,7 +538,12 @@ main_cards = [
     "status" => "Weakness",
     "severity" => 4,
     "mainEvidence" => "Fusion/grid friction appears across J+7 blockers, least-liked gameplay, comments, bug reports and merge metrics.",
-    "nextAction" => "Add codex support, recycling, inversion ritual, recipe memory and grid expansion/dead-end prevention.",
+    "nextAction" => [
+      "- Add Codex support (consultation screen for known/to-discover tiles)",
+      "- Recycling that lets players change their tiles",
+      "- Invert planting and pruning rituals to make the first recipes more attractive and natural",
+      "- Improve the tutorial to avoid situations where the player is lost (stronger guidance)"
+    ].join("\n"),
     "evidence" => [
       "Explicit fusion block: 7/55 J+7 respondents, 12.7%, said they were blocked because they did not understand how to merge tiles.",
       "Gameplay experience criticized: 15/55, 27.3%, cited gameplay (rituals, fusions, layout) among the least appreciated aspects.",
@@ -547,7 +560,11 @@ main_cards = [
     "status" => "Weakness",
     "severity" => 3,
     "mainEvidence" => "7/55 J+7 respondents, 12.7%, played without sound because music or sound design did not please them.",
-    "nextAction" => "Rework audio toward a more ambient, optional and situational sound design.",
+    "nextAction" => [
+      "- Rework audio toward a less continuously musical solution",
+      "- More ambient sounds and breathing without music",
+      "- Use music at key moments (ritual, unlock, reward, etc.)"
+    ].join("\n"),
     "evidence" => [
       "Direct sound rejection: 7/55 J+7 respondents, 12.7%, said they played without sound because music or sound design did not please them.",
       "Music among least appreciated: 7/55, 12.7%, cited music among the least appreciated aspects.",
@@ -564,7 +581,13 @@ main_cards = [
     "status" => "Weakness",
     "severity" => 3,
     "mainEvidence" => "14/55 J+7 respondents, 25.5%, cited the questioning experience among the least appreciated aspects.",
-    "nextAction" => "Fix item wording and repetition, add clearer progress/objectives, and improve custom result interpretation.",
+    "nextAction" => [
+      "- Rework the wording of presented questions",
+      "- Stop repeating the Big Five once it is complete (before several months)",
+      "- Observatory notifications when a questionnaire is completed",
+      "- Improve result interpretation (for example: Big Five -> written text)",
+      "- Applies only to questions asked during rituals. Standardized questionnaires do not need rewording"
+    ].join("\n"),
     "evidence" => [
       "Questioning criticized: 14/55 J+7 respondents, 25.5%, cited the questioning experience among the least appreciated aspects.",
       "Repetition comments: 9/55 J+7 respondents, 16.4%, explicitly mentioned repetitive or redundant questions.",

@@ -869,6 +869,44 @@ const THEME_MATCH_FORMULAS = {
 
 const CARD_COPY = {
   en: {
+    "MC-W01": {
+      nextAction: [
+        "- Improve onboarding (Onboarding Beta script)",
+        "- Tease advanced play at the end of onboarding",
+        "- Codex/Telescope/Map and closing rewards"
+      ].join("\n")
+    },
+    "MC-W02": {
+      nextAction: [
+        "- Make all features accessible",
+        "- Centralize map and telescope usage (introduced during onboarding)",
+        "- Notification system (red dots) when elements need consulting"
+      ].join("\n")
+    },
+    "MC-W03": {
+      nextAction: [
+        "- Add Codex support (consultation screen for known/to-discover tiles)",
+        "- Recycling that lets players change their tiles",
+        "- Invert planting and pruning rituals to make the first recipes more attractive and natural",
+        "- Improve the tutorial to avoid situations where the player is lost (stronger guidance)"
+      ].join("\n")
+    },
+    "MC-W04": {
+      nextAction: [
+        "- Rework audio toward a less continuously musical solution",
+        "- More ambient sounds and breathing without music",
+        "- Use music at key moments (ritual, unlock, reward, etc.)"
+      ].join("\n")
+    },
+    "MC-W05": {
+      nextAction: [
+        "- Rework the wording of presented questions",
+        "- Stop repeating the Big Five once it is complete (before several months)",
+        "- Observatory notifications when a questionnaire is completed",
+        "- Improve result interpretation (for example: Big Five -> written text)",
+        "- Applies only to questions asked during rituals. Standardized questionnaires do not need rewording"
+      ].join("\n")
+    },
     "MC-S01": {
       evidence: [
         "Top positive mention: 20/43 J+7 respondents, 46.5%, cited graphic rendering among the most appreciated aspects.",
@@ -940,7 +978,11 @@ const CARD_COPY = {
     "MC-W01": {
       title: "But et progression restent sous-expliqués après l'onboarding",
       mainEvidence: "25/43 répondants J+7, soit 58,1 %, déclarent avoir été bloqués parce qu'ils ne comprenaient pas comment progresser.",
-      nextAction: "Tutoriel v2, objectif final explicite, et polish de la sélection, de la caméra et du déplacement.",
+      nextAction: [
+        "- Amélioration de l'onboarding (script Onboarding Beta)",
+        "- Teaser partie avancée à la fin de l'onboarding",
+        "- Codex/Télescope/Carte et récompenses de clôture"
+      ].join("\n"),
       evidence: [
         "Blocage principal en J+7 : 25/43 répondants, soit 58,1 %, déclarent avoir été bloqués parce qu'ils ne comprenaient pas comment progresser.",
         "Prise en main très critiquée : 21/43, soit 48,8 %, citent la prise en main, la navigation ou la manipulation parmi les aspects les moins appréciés.",
@@ -952,7 +994,11 @@ const CARD_COPY = {
     "MC-W02": {
       title: "La valeur de l'observatoire hors carnet/résultats est faible ou sous-instrumentée",
       mainEvidence: "Chez les utilisateurs qui visitent l'observatoire, le taux médian d'ouverture du journal est de 100,0 %, tandis que l'usage hors journal est quasiment absent.",
-      nextAction: "Clarifier la logique du hub : rendre visibles les affordances hors journal, les instrumenter et expliquer pourquoi revenir.",
+      nextAction: [
+        "- Rendre toutes les features accessibles",
+        "- Centraliser l'usage de la carte et du télescope (présentés à l'onboarding)",
+        "- Système de notifications (red dots) quand il y a des éléments à consulter"
+      ].join("\n"),
       evidence: [
         "L'observatoire est surtout un chemin vers le journal : chez les utilisateurs qui le visitent, le taux médian d'ouverture du journal est de 100,0 %.",
         "L'activité hors journal est presque absente : le taux médian de visites observatoire hors journal est de 0,0 %.",
@@ -964,7 +1010,12 @@ const CARD_COPY = {
     "MC-W03": {
       title: "La fusion des tuiles manque d'affordance, de mémoire de recettes et de gestion de grille",
       mainEvidence: "La friction fusion/grille apparaît dans les blocages J+7, le gameplay moins apprécié, les commentaires, les bug reports et les métriques de fusion.",
-      nextAction: "Ajouter le support codex, le recyclage, inverser les rituels, prévenir les softlocks (tutoriel).",
+      nextAction: [
+        "- Ajout du Codex (écran de consultation des tuiles connues/à découvrir)",
+        "- Recyclage qui permet de changer ses tuiles",
+        "- Inverser rituel plantation et élagage pour rendre les premières recettes plus attrayantes et naturelles",
+        "- Amélioration du tutoriel pour éviter les situations où le joueur est perdu (guidage plus fort)"
+      ].join("\n"),
       evidence: [
         "Blocage explicite de fusion : 6/43 répondants J+7, soit 14,0 %, disent avoir été bloqués parce qu'ils ne comprenaient pas comment fusionner les tuiles.",
         "Expérience de jeu critiquée : 13/43, soit 30,2 %, citent le gameplay (rituels, fusions, aménagement) parmi les aspects les moins appréciés.",
@@ -976,7 +1027,11 @@ const CARD_COPY = {
     "MC-W04": {
       title: "L'audio produit un signal négatif petit mais très net",
       mainEvidence: "6/43 répondants J+7, soit 14,0 %, ont joué sans le son parce que la musique ou le design sonore ne leur plaisait pas.",
-      nextAction: "Retravailler l'audio vers un design sonore plus ambiant, optionnel et situationnel.",
+      nextAction: [
+        "- Retravailler l'audio vers une solution moins continuellement musicale",
+        "- Plus forte présence de sons ambiants et respirations sans musique",
+        "- Utilisation des musiques aux moments clefs (rituel, déblocage, récompense, etc.)"
+      ].join("\n"),
       evidence: [
         "Rejet direct du son : 6/43 répondants J+7, soit 14,0 %, disent avoir joué sans le son parce que la musique ou le design sonore ne leur plaisait pas.",
         "Musique parmi les moins appréciés : 6/43, soit 14,0 %, citent la musique parmi les aspects les moins appréciés.",
@@ -988,7 +1043,13 @@ const CARD_COPY = {
     "MC-W05": {
       title: "La progression Big Five est trop lente pour rendre les items répétés ou semi-opposés acceptables",
       mainEvidence: "13/43 répondants J+7, soit 30,2 %, citent l'expérience de questionnement parmi les aspects les moins appréciés.",
-      nextAction: "Corriger le wording et la répétition des items, ajouter une progression/des objectifs plus clairs, et améliorer l'interprétation personnalisée des résultats.",
+      nextAction: [
+        "- Retravailler le wording des questions présentées",
+        "- Ne plus répéter le Big Five une fois qu'il est terminé (avant quelques mois)",
+        "- Notifications observatoire lorsqu'on termine un questionnaire",
+        "- Améliorer l'interprétation des résultats (exemple Big Five -> texte rédigé)",
+        "- Ne concerne que les questions posées lors des rituels. Les questionnaires standardisés n'ont pas besoin de rewording"
+      ].join("\n"),
       evidence: [
         "Questionnement critiqué : 13/43 répondants J+7, soit 30,2 %, citent l'expérience de questionnement parmi les aspects les moins appréciés.",
         "Commentaires sur la répétition : 6/43 répondants J+7, soit 14,0 %, mentionnent explicitement des questions répétitives ou redondantes.",
@@ -1544,6 +1605,17 @@ function textWithPercentHovers(value) {
   }
   html += esc(text.slice(lastIndex));
   return html;
+}
+
+function actionContentHtml(value) {
+  const lines = String(value ?? "").split(/\n+/).map((line) => line.trim()).filter(Boolean);
+  const bulletLines = lines
+    .map((line) => line.match(/^[-*]\s+(.+)$/)?.[1]?.trim())
+    .filter(Boolean);
+  if (lines.length > 1 && bulletLines.length === lines.length) {
+    return `<ul class="action-list">${bulletLines.map((line) => `<li>${textWithPercentHovers(line)}</li>`).join("")}</ul>`;
+  }
+  return `<p>${textWithPercentHovers(value)}</p>`;
 }
 
 function optionList(select, values, allLabel) {
@@ -2141,7 +2213,10 @@ function renderActionCards() {
       <h3>${esc(card.title)}</h3>
       ${simpleMode ? "" : `
         <p>${textWithPercentHovers(card.mainEvidence)}</p>
-        <p><strong>${esc(cardActionLabel(card))}:</strong> ${textWithPercentHovers(card.nextAction)}</p>
+        <div class="card-action-summary">
+          <strong>${esc(cardActionLabel(card))}:</strong>
+          ${actionContentHtml(card.nextAction)}
+        </div>
       `}
     </button>
   `).join("");
@@ -2602,7 +2677,7 @@ function renderActionDetail() {
         <h2>${esc(card.title)}</h2>
         <div class="detail-action detail-action--${esc(card.kind || "default")}">
           <span>${esc(cardActionLabel(card))}</span>
-          <p>${textWithPercentHovers(card.nextAction)}</p>
+          ${actionContentHtml(card.nextAction)}
         </div>
         <p class="detail-main-evidence">${textWithPercentHovers(card.mainEvidence)}</p>
       </div>
@@ -2663,10 +2738,11 @@ function renderActionDetail() {
 function evidenceLine(line) {
   const localizedLine = localizedSourceLine(line);
   const sourceTooltip = /coherence|cohérence/i.test(localizedLine.source) ? termDefinition("coherenceFlag") : "";
+  const lineText = /-(ACTION|N)$/.test(localizedLine.id || "") ? actionContentHtml(localizedLine.text) : `<p>${textWithPercentHovers(localizedLine.text)}</p>`;
   return `
     <article class="evidence-line">
       <span class="source" ${tooltipAttrs(sourceTooltip)}>${esc(localizedLine.source)}${localizedLine.userId ? ` · ${esc(localizedLine.userId)}` : ""}</span>
-      <p>${textWithPercentHovers(localizedLine.text)}</p>
+      ${lineText}
       ${localizedLine.context ? `<small>${textWithPercentHovers(localizedLine.context)}</small>` : ""}
     </article>
   `;

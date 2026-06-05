@@ -805,6 +805,37 @@ input[type="range"] {
   line-height: 1.45;
 }
 
+.card-action-summary {
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.card-action-summary strong {
+  color: var(--ink);
+}
+
+.card-action-summary p {
+  color: var(--muted);
+}
+
+.action-list {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 5px;
+}
+
+.action-list li {
+  padding-left: 1px;
+}
+
+.action-list li::marker {
+  color: currentColor;
+}
+
 .detail-pane {
   position: sticky;
   top: 100px;
@@ -867,11 +898,17 @@ input[type="range"] {
   text-transform: uppercase;
 }
 
-.detail-action p {
+.detail-action p,
+.detail-action .action-list {
   color: var(--ink);
   font-size: 17px;
   font-weight: 760;
   line-height: 1.35;
+}
+
+.detail-action .action-list {
+  gap: 7px;
+  padding-left: 20px;
 }
 
 .detail-main-evidence {
@@ -996,6 +1033,11 @@ input[type="range"] {
   margin: 0;
   line-height: 1.45;
   font-size: 13px;
+}
+
+.evidence-line .action-list {
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 .evidence-line small {
